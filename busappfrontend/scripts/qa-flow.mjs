@@ -13,7 +13,10 @@ try {
   await page.getByText(/^Transit pressure$/).waitFor();
   await page.getByText(/\d+ \/ 100/).first().waitFor({ timeout: 20000 });
   console.log('home: pressure rendered');
-  await page.getByRole('button', { name: /Leave now|Now/ }).first().click();
+  // The time row now opens a direct time picker (qa-time.mjs); reach the
+  // pressure-timeline windows via its own nav entry, same as a real rider would.
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'Pressure timeline' }).click();
   await page.waitForURL('**/plan');
   const bars = page.getByRole('radio', { name: /pressure \d+ of 100/ });
   await bars.first().waitFor({ timeout: 20000 });

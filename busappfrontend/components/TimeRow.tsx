@@ -4,7 +4,8 @@ type TimeRowProps = {
   left: string;
   right: string;
   /** When present, the whole row becomes a real button (keyboard-operable,
-   * focusable) rather than a plain div — used to navigate to /plan. */
+   * focusable) rather than a plain div — opens the trip time picker. A fixed
+   * accessible name (the visible text changes with the chosen time/mode). */
   onClick?: () => void;
 };
 
@@ -26,6 +27,7 @@ export function TimeRow({ left, right, onClick }: TimeRowProps) {
       <button
         type="button"
         onClick={onClick}
+        aria-label={`Trip time: ${left}, ${right}`}
         className="flex h-[19px] w-full items-center px-gutter text-label text-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
       >
         {content}

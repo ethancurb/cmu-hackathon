@@ -43,8 +43,8 @@ try {
   await page.getByRole('radiogroup', { name: 'Journey cards' }).last().getByRole('radio').first().waitFor({ timeout: 45000 });
   const lastCards = page.getByRole('radiogroup', { name: 'Journey cards' }).last().getByRole('radio');
   const secondCardName = (await lastCards.count()) > 1 ? await lastCards.nth(1).innerText() : null;
-  if (secondCardName) await lastCards.nth(1).click();
-  await page.getByRole('button', { name: 'Show on map' }).last().click();
+  const chosenCard = secondCardName ? lastCards.nth(1) : lastCards.first();
+  await chosenCard.getByRole('button', { name: 'Select route' }).click();
   await page.getByRole('dialog').waitFor({ state: 'hidden' });
   const to = await page.getByText('To', { exact: true }).locator('..').innerText();
   console.log(`home destination field: ${to.replace(/\n/g, ' ')}`);
@@ -60,9 +60,9 @@ try {
   if (!arrive || arrive !== buttonEta) problems.push(`ETA mismatch: panel ${arrive} vs button ${buttonEta}`);
   if (secondCardName && !/Arrive by/.test(await at(page))) problems.push('arrive-by deadline from chat not reflected in the time row');
   await page.getByRole('button', { name: 'Itinerary' }).click();
-  const legs = await panel.locator('ol li').allInnerTexts();
-  console.log(`itinerary legs (${legs.length}): ${legs.map((l) => l.split('\n')[0]).join(' → ')}`);
-  if (!legs.some((l) => /^Walk/.test(l)) || !legs.some((l) => /Board .* → alight/.test(l)) || !legs.some((l) => /Arrive \(estimate\)/.test(l))) problems.push('itinerary is missing walking, boarding/alighting or arrival rows');
+  const steps = await panel.getByRole('region', { name: 'Itinerary steps' }).getByRole('button').allInnerTexts();
+  console.log(`itinerary steps (${steps.length}): ${steps.map((l) => l.split('\n')[0]).join(' → ')}`);
+  if (!steps.some((l) => /walk/i.test(l)) || !steps.some((l) => /transit/i.test(l)) || !steps.some((l) => /arrival/i.test(l))) problems.push('itinerary is missing walking, transit or arrival steps');
   const options = page.getByRole('radiogroup', { name: 'Journey options' }).getByRole('radio');
   if ((await options.count()) > 1) {
     const before = arrive;

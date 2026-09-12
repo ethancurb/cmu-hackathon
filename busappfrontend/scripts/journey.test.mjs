@@ -5,6 +5,48 @@ import { parsePlan, parseItinerary, planUrl } from "../lib/journey/motis.ts";
 import { decodePolyline } from "../lib/journey/polyline.ts";
 import { acceptResponse, pickJourney, journeyUrl } from "../lib/journey/use-journeys.ts";
 import { recommendedBus } from "../lib/journey/recommendation.ts";
+import { journeyProgress } from "../lib/journey/progress.ts";
+
+const progressNow = Date.parse("2026-09-12T18:00:00Z");
+const progressPoints = [
+  { lat: 40.4443, lng: -79.943 }, { lat: 40.4443, lng: -79.941 },
+  { lat: 40.4443, lng: -79.929 }, { lat: 40.4463, lng: -79.929 },
+];
+const progressTrip = {
+  startTime: new Date(progressNow).toISOString(), endTime: new Date(progressNow + 3_600_000).toISOString(),
+  legs: progressPoints.slice(0, -1).map((from, i) => ({ from, to: progressPoints[i + 1], geometry: [from, progressPoints[i + 1]] })),
+};
+const gps = (point, extra = {}) => ({ ...point, accuracy: 10, timestamp: progressNow, ...extra });
+
+test("location follows walking, boarding boundary, transit geometry, transfer and destination without schedule-only advancement", () => {
+  assert.equal(journeyProgress(progressTrip, gps({ lat: 40.4443, lng: -79.942 }), progressNow).index, 0);
+  assert.equal(journeyProgress(progressTrip, gps(progressPoints[1]), progressNow).index, 1);
+  assert.equal(journeyProgress(progressTrip, gps({ lat: 40.4443, lng: -79.935 }), progressNow).index, 1);
+  assert.equal(journeyProgress(progressTrip, gps(progressPoints[2]), progressNow).index, 2);
+  assert.equal(journeyProgress(progressTrip, gps({ lat: 40.4453, lng: -79.929 }), progressNow).index, 2);
+  assert.deepEqual(journeyProgress(progressTrip, gps(progressPoints[3]), progressNow), { status: "arrival", index: 3 });
+  assert.equal(journeyProgress(progressTrip, gps(progressPoints[0], { timestamp: progressNow + 1_800_000 }), progressNow + 1_800_000).index, 0);
+});
+
+test("missing, denied, stale, inaccurate and off-route GPS never mark a current step", () => {
+  const cases = [
+    [null, false, "locating"], [null, true, "unavailable"],
+    [gps(progressPoints[0], { timestamp: progressNow - 90_001 }), false, "stale"],
+    [gps(progressPoints[0], { accuracy: 200 }), false, "inaccurate"],
+    [gps({ lat: 40.5, lng: -80.1 }), false, "off-route"],
+    [gps(progressPoints[0], { accuracy: NaN }), false, "unavailable"],
+  ];
+  for (const [fix, denied, status] of cases) assert.deepEqual(journeyProgress(progressTrip, fix, progressNow, denied), { status, index: null });
+});
+
+test("overlapping segments and future trips stay previews; a different itinerary is matched afresh", () => {
+  const overlap = { ...progressTrip, legs: [progressTrip.legs[0], progressTrip.legs[0]] };
+  const fix = gps({ lat: 40.4443, lng: -79.942 });
+  assert.equal(journeyProgress(overlap, fix, progressNow).status, "ambiguous");
+  assert.deepEqual(journeyProgress({ ...progressTrip, startTime: new Date(progressNow + 3_600_000).toISOString() }, fix, progressNow), { status: "preview", index: null });
+  assert.deepEqual(journeyProgress({ ...progressTrip, legs: [progressTrip.legs[2]] }, fix, progressNow), { status: "off-route", index: null });
+  assert.deepEqual(journeyProgress({ ...progressTrip, endTime: new Date(progressNow - 8_000_000).toISOString() }, fix, progressNow), { status: "expired", index: null });
+});
 
 test("recommended bus excludes walking-only options and ranks duration, transfers, walking without mutating provider order", () => {
   const bus = (id, durationSeconds, transfers, walkSeconds) => ({ id, durationSeconds, transfers, walkSeconds, legs: [{ mode: "BUS" }] });
