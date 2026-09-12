@@ -4,14 +4,14 @@ Target Traveling. **Three-minute presentation/demo; Google Form due September 12
 
 ## Three-minute proof
 
-- **0:00–0:20:** Home screen, live mode. "Google Maps answers how to get there. LoadLine answers what transit will be like when you go, why, and when to leave." Point at the index, level, confidence and the WHY list built from real MLB/NFL/NHL schedules, Open-Meteo and PRT realtime.
-- **0:20–1:20:** `/?demo=pirates&stage=0` (or `/demo` → Pirates). Step **Normal → + Game → + Rain → + Delay**. Narrate: score climbs 31 → 62 → 73 → 91, "Pirates vs Cubs · estimated exit wave" enters WHY, PNC Park marker appears, the event impact card shows the estimated end, the surge window appears, advice flips from "Leave now" to "Wait until 10:25 PM".
-- **1:20–1:50:** Tap the recommendation → `/plan`: the timeline with the surge band and lowest-window bracket; pick a bar; "Use selected time" returns home with pressure at that time.
-- **1:50–2:20:** Back in live mode: search a real address (map re-fits, nearest route selected), show "Tomorrow / 8 hours" on `/plan` for a trip near Acrisure Stadium on a Steelers Sunday. Open "sources" in the footnote: every input's status and age; explain that a failed source lowers confidence instead of being faked, and that the index is not occupancy.
-- **2:20–2:40:** Rider benefit and Traveling fit: decide *when* to travel, not only how.
+- **0:00–0:25:** Home screen, live mode. "How should I get there, when should I leave, and what could make it busier?" Tap **Ask LoadLine** and type "CMU to the North Shore by 7". The reply lists real walking + PRT itineraries (Transitous over PRT GTFS) with estimated arrivals and the Transit Pressure advice; tap a journey card → **Show on map**: the map draws the walk, the boarding stop, the bus and the final walk; the summary shows arrival (estimate, realtime/scheduled) and total duration. Say "the museum" to show the clarification chips. If no `ANTHROPIC_API_KEY` is set, say so: the sheet is labeled "Guided planner"; the routes and pressure are real either way.
+- **0:25–0:45:** Pan and zoom the map (two fingers / Ctrl+scroll keep the page scrollable), tap **Fit route**. Press **Leave now**: the itinerary and the ETA on the button refresh together. Expand **Advice** and **Sources**: WHY, event impact, every feed's status, and the listed coverage gaps ("Model index, not occupancy" stays visible).
+- **0:45–1:40:** `/?demo=pirates&stage=0`. Step **Normal → + Game → + Rain → + Delay**. Narrate: score climbs 31 → 62 → 73 → 91, "Pirates vs Cubs · estimated exit wave" enters WHY, PNC Park marker appears, the surge window appears, advice flips from "Leave now" to "Wait until 10:25 PM".
+- **1:40–2:15:** Tap the stats button → `/plan`: the timeline with the surge band and lowest-window bracket. Tap the peak bar (or use ← →): **What's happening today** opens with that bar's evidence — Pirates vs Cubs, PNC Park, 6:30–9:30 PM with "end is an estimate", the source, weather and PRT delay detail, and the model's advice. Tap a quiet bar: "No specific event is known… not covered: concerts (needs Ticketmaster key)…". "Use selected time" returns home; the journey search re-runs for that time.
+- **2:15–2:40:** Rider benefit and Traveling fit: decide *when* to travel and *how*, with the reasons on screen and nothing invented.
 - **2:40–3:00:** buffer and close.
 
-If the network fails, stay in demo mode: the scenarios run through the same engine offline.
+If the network fails, stay in demo mode: the scenarios run through the same engine offline (itinerary search is off in scenarios, by design).
 
 ## Evidence to record
 

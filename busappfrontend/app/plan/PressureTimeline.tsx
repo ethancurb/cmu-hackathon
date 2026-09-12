@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, type KeyboardEvent } from "react";
 import { cn } from "@/lib/cn";
 import { LEVEL_COLOR, LEVEL_WORD, clock, shortHour } from "@/lib/pressure/format";
 import type { DemandPrediction, LowWindow, SurgeWindow } from "@/lib/pressure/types";
@@ -22,8 +23,8 @@ type PressureTimelineProps = {
  * (low green → surge red); the selected sample carries the lime marker the
  * arrival cards already use for selection. A thin band above the chart marks
  * the surge span, and a bracket below marks the lowest-pressure window.
- * Each column is a full-height radio button, so touch targets are tall even
- * when bars are short.
+ * Each column is a full-height radio button (mouse/touch), and the group uses
+ * a roving tabindex with arrow keys, Home and End for keyboard selection.
  */
 export function PressureTimeline({ timeline, surge, bestWindow, selectedIndex, onSelect, caption }: PressureTimelineProps) {
   const selected = timeline[selectedIndex] ?? timeline[0];
@@ -32,6 +33,19 @@ export function PressureTimeline({ timeline, surge, bestWindow, selectedIndex, o
   const surgeSpan = surge ? [index(surge.start), Math.max(index(surge.start), index(surge.end) - (surge.continues ? 0 : 1))] : null;
   const bestSpan = [index(bestWindow.start), Math.max(index(bestWindow.start), index(bestWindow.end))];
   const tickEvery = n > 20 ? 4 : n > 12 ? 4 : 2;
+  const buttonsRef = useRef<(HTMLButtonElement | null)[]>([]);
+
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    let next: number | null = null;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") next = Math.min(n - 1, selectedIndex + 1);
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = Math.max(0, selectedIndex - 1);
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = n - 1;
+    if (next === null) return;
+    e.preventDefault();
+    onSelect(next);
+    buttonsRef.current[next]?.focus();
+  }
 
   return (
     <div className="flex flex-col items-center px-gutter">
@@ -57,13 +71,23 @@ export function PressureTimeline({ timeline, surge, bestWindow, selectedIndex, o
         ) : null}
       </div>
 
-      <div role="radiogroup" aria-label="Select a departure time" className="flex w-full items-end" style={{ height: CHART_HEIGHT, gap: BAR_GAP }}>
+      <div
+        role="radiogroup"
+        aria-label="Select a departure time"
+        onKeyDown={onKeyDown}
+        className="flex w-full items-end"
+        style={{ height: CHART_HEIGHT, gap: BAR_GAP }}
+      >
         {timeline.map((sample, i) => (
           <button
             key={sample.at}
+            ref={(el) => {
+              buttonsRef.current[i] = el;
+            }}
             type="button"
             role="radio"
             aria-checked={i === selectedIndex}
+            tabIndex={i === selectedIndex ? 0 : -1}
             aria-label={`${clock(sample.at)}, pressure ${sample.score} of 100, ${LEVEL_WORD[sample.level]}`}
             onClick={() => onSelect(i)}
             className="group flex h-full min-w-0 flex-1 flex-col justify-end outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"

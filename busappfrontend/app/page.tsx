@@ -1,28 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
 import { LocationField } from "@/components/LocationField";
 import { TimeRow } from "@/components/TimeRow";
 import { PrimaryButton } from "@/components/PrimaryButton";
+import { Disclosure } from "@/components/Disclosure";
 import { ClockIcon } from "@/components/icons/stroked";
 import { RouteMap } from "./RouteMap";
 import { RouteListView } from "./RouteListView";
 import { ArrivalCards } from "./ArrivalCards";
 import { PressureModule } from "./PressureModule";
+import { JourneyPanel } from "./JourneyPanel";
+import { ChatSheet } from "./ChatSheet";
 import { DemoBar } from "./DemoBar";
 import { useAppState, type DemoSelection } from "@/lib/app-context";
 import { useArrivalTimes } from "@/lib/arrivals";
-import { useDeviceLocation } from "@/lib/geolocation";
+import { CMU_FALLBACK, useDeviceLocation } from "@/lib/geolocation";
+import { useNow } from "@/lib/use-now";
 import { usePressure } from "@/lib/pressure/use-pressure";
+import { pickJourney, useJourneys } from "@/lib/journey/use-journeys";
+import { distanceKm } from "@/lib/pressure/geo";
 import { SCENARIOS, SCENARIO_DEFINITIONS, stageCount, type Scenario } from "@/lib/pressure/demo";
-import { clock, weekdayShort, buttonLabel } from "@/lib/pressure/format";
-import { loadCachedDestination, saveCachedDestination } from "@/lib/destination-cache";
+import { clock, weekdayShort } from "@/lib/pressure/format";
 import type { AddressResult } from "@/lib/geocode";
-import type { Destination } from "./MapCanvas";
 
-const DEFAULT_LOCATION = "Morewood Avenue";
+const DEFAULT_ORIGIN_LABEL = "Carnegie Mellon (default)";
+const NEARBY_CARDS_KM = 1.5;
 
 /** `/?demo=pirates&stage=2` puts the home screen into a deterministic scenario
  * (see lib/pressure/demo.ts). Read after mount so server and client first
@@ -49,25 +54,36 @@ function writeDemoParam(demo: DemoSelection | null) {
 
 export default function HomePage() {
   const router = useRouter();
-  const { selectedRouteId, setSelectedRouteId, departureAt, viewMode, setViewMode, weatherDismissed, dismissWeather, demo, setDemo } =
-    useAppState();
+  const {
+    selectedRouteId,
+    setSelectedRouteId,
+    destination,
+    setDestination,
+    manualOrigin,
+    setManualOrigin,
+    departureAt,
+    arriveBy,
+    applyDepartureAt,
+    prefs,
+    selectedJourneyId,
+    selectJourney,
+    viewMode,
+    setViewMode,
+    weatherDismissed,
+    dismissWeather,
+    demo,
+    setDemo,
+    chatOpen,
+    setChatOpen,
+    riderSignals,
+  } = useAppState();
 
-  const [location, setLocation] = useState(DEFAULT_LOCATION);
-  // Only set once a real address is picked from the search dropdown — the map
-  // keeps its fixed decorative pin until then rather than guessing a coordinate.
-  const [destination, setDestination] = useState<Destination>(null);
   const device = useDeviceLocation();
   const arrivals = useArrivalTimes();
+  const now = useNow();
 
-  // Reads the cached address and any demo URL parameter after mount, deferred a
-  // tick to satisfy the set-state-in-effect lint rule (same pattern as lib/geocode.ts).
   useEffect(() => {
     queueMicrotask(() => {
-      const cached = loadCachedDestination();
-      if (cached) {
-        setLocation(cached.label);
-        setDestination({ lat: cached.lat, lng: cached.lng });
-      }
       const fromUrl = readDemoParam();
       if (fromUrl) setDemo(fromUrl);
     });
@@ -75,29 +91,59 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleSelectAddress(address: AddressResult) {
-    setDestination({ lat: address.lat, lng: address.lng });
-    saveCachedDestination(address);
-  }
-
   function changeDemo(next: DemoSelection | null) {
     setDemo(next);
     writeDemoParam(next);
   }
 
   const scenario = demo ? SCENARIO_DEFINITIONS[demo.scenario] : null;
-  const origin = scenario ? { lat: scenario.location.lat, lng: scenario.location.lng } : { lat: device.lat, lng: device.lng };
-  const tripEnd = scenario ? { lat: scenario.destination.lat, lng: scenario.destination.lng } : destination;
-  const pressure = usePressure({ origin, destination: tripEnd, at: departureAt, demo });
+  const origin = scenario ? { lat: scenario.location.lat, lng: scenario.location.lng } : manualOrigin ? { lat: manualOrigin.lat, lng: manualOrigin.lng } : { lat: device.lat, lng: device.lng };
+  const originLabel = scenario ? scenario.location.label : manualOrigin ? manualOrigin.label : device.source === "device" ? "Your location" : DEFAULT_ORIGIN_LABEL;
+  const tripEnd = scenario ? { lat: scenario.destination.lat, lng: scenario.destination.lng } : destination ? { lat: destination.lat, lng: destination.lng } : null;
+  const destinationLabel = scenario ? scenario.destination.label : destination?.label ?? "Where to?";
 
-  const now = pressure.data?.generatedAt ?? null;
-  const whenLabel = departureAt ? `at ${clock(departureAt)}` : scenario && now ? `${weekdayShort(now)} ${clock(now)}` : "leaving now";
-  const timeLeft = departureAt ? "Leave at" : "Leave now";
-  const timeRight = departureAt ? clock(departureAt) : scenario && now ? clock(now) : "Now";
-  const recommendation = pressure.data?.recommendation;
+  // Scenarios carry a fixed clock the routing provider cannot search, so the
+  // itinerary search runs only against the live clock.
+  const journeys = useJourneys({
+    from: scenario ? null : origin,
+    to: scenario ? null : tripEnd,
+    at: departureAt,
+    arriveBy,
+    maxWalkMinutes: prefs.maxWalkMinutes,
+    maxTransfers: prefs.maxTransfers,
+  });
+  const journeyList = useMemo(() => (journeys.data?.status === "ok" ? journeys.data.journeys : []), [journeys.data]);
+  const journey = pickJourney(journeyList, selectedJourneyId);
+
+  // Pressure is modeled for the moment the rider actually leaves: the selected
+  // journey's departure when one exists, otherwise the chosen time or now.
+  const journeyStartUsable = !!journey && now !== null && Date.parse(journey.startTime) > now - 4 * 60_000 && Date.parse(journey.startTime) < now + 47 * 3_600_000;
+  const pressureAt = scenario ? departureAt : journeyStartUsable ? journey.startTime : arriveBy ? null : departureAt;
+  const pressure = usePressure({ origin, destination: tripEnd, at: pressureAt, demo, riderSignals });
+
+  const generatedAt = pressure.data?.generatedAt ?? null;
+  const pressureWhen = pressureAt ? `at ${clock(pressureAt)}` : scenario && generatedAt ? `${weekdayShort(generatedAt)} ${clock(generatedAt)}` : "leaving now";
+  const timeLeft = departureAt ? (arriveBy ? "Arrive by" : "Leave at") : "Leave now";
+  const timeRight = departureAt ? clock(departureAt) : scenario && generatedAt ? clock(generatedAt) : "Now";
+  const tripWhen = scenario ? "scenario clock · itinerary search off" : departureAt ? (arriveBy ? `arriving by ${clock(departureAt)}` : `leaving ${clock(departureAt)}`) : "leaving now";
   const majorEvent = pressure.data?.eventImpacts.find((i) => i.role === "MAJOR")?.event ?? null;
   const eventMarker = majorEvent ? { lat: majorEvent.lat, lng: majorEvent.lng, label: majorEvent.venue } : null;
   const demoRain = demo ? demo.stage >= (scenario?.event ? 2 : 1) : false;
+  const nearCmu = !demo && distanceKm(origin, CMU_FALLBACK) <= NEARBY_CARDS_KM;
+
+  function handleSelectDestination(address: AddressResult) {
+    setDestination({ label: address.label, lat: address.lat, lng: address.lng });
+  }
+
+  function handleSelectOrigin(address: AddressResult) {
+    setManualOrigin({ label: address.label, lat: address.lat, lng: address.lng });
+  }
+
+  function leaveNow() {
+    applyDepartureAt(null);
+    selectJourney(null);
+    journeys.refresh();
+  }
 
   return (
     <div className="mobile-screen home-screen flex min-h-dvh flex-col bg-canvas">
@@ -109,16 +155,30 @@ export default function HomePage() {
         </div>
       ) : null}
 
-      <div className="mt-4 px-gutter">
-        <LocationField
-          value={scenario ? scenario.destination.label : location}
-          onChange={setLocation}
-          onSelectAddress={handleSelectAddress}
-        />
+      {/* Origin + destination. Real coordinates only come from a picked suggestion (or chat). */}
+      <div className="mt-4 flex flex-col gap-2 px-gutter">
+        <div>
+          <span className="text-footnote text-blue opacity-footnote">From</span>
+          <LocationField value={originLabel} onSelectAddress={handleSelectOrigin} />
+          {!scenario && device.source === "fallback" && !manualOrigin ? (
+            <p className="mt-1 text-footnote text-blue opacity-footnote">Device location unavailable or denied. Starting from Carnegie Mellon; edit the field to set your real start.</p>
+          ) : null}
+          {manualOrigin && !scenario ? (
+            <button type="button" onClick={() => setManualOrigin(null)} className="mt-1 text-footnote text-blue underline outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue">
+              Use my device location instead
+            </button>
+          ) : null}
+        </div>
+        <div>
+          <span className="text-footnote text-blue opacity-footnote">To</span>
+          <LocationField value={destinationLabel} onSelectAddress={handleSelectDestination} />
+        </div>
       </div>
 
-      <div className="mt-[14px]">
-        <TimeRow left={timeLeft} right={timeRight} onClick={() => router.push("/plan")} />
+      <div className="mt-[14px] flex items-center">
+        <div className="min-w-0 flex-1">
+          <TimeRow left={timeLeft} right={timeRight} onClick={() => router.push("/plan")} />
+        </div>
       </div>
 
       <div className="route-panel mt-4 px-gutter">
@@ -127,10 +187,12 @@ export default function HomePage() {
             activeRouteId={selectedRouteId}
             onSelectRoute={setSelectedRouteId}
             destination={tripEnd}
-            origin={scenario ? origin : null}
+            origin={scenario || manualOrigin ? origin : null}
             weatherOverride={scenario ? { label: demoRain ? "Rain beginning" : "Clear", icon: demoRain ? "cloud" : "sun" } : null}
             eventMarker={eventMarker}
+            journey={journey}
             onOpenTimeline={() => router.push("/plan")}
+            onOpenChat={() => setChatOpen(true)}
             weatherDismissed={weatherDismissed}
             onDismissWeather={dismissWeather}
             viewMode={viewMode}
@@ -143,33 +205,60 @@ export default function HomePage() {
             viewMode={viewMode}
             onSetViewMode={setViewMode}
             arrivals={arrivals}
+            journey={journey}
           />
         )}
       </div>
 
       <div className="mt-4">
-        <PressureModule state={pressure} whenLabel={whenLabel} />
+        <JourneyPanel state={journeys} journey={journey} onSelect={selectJourney} hasDestination={!!tripEnd && !scenario} whenLabel={tripWhen} />
       </div>
 
-      {/* Live next-bus predictions cover the three tracked routes near CMU;
-          a scenario elsewhere in the city would make them misleading. */}
-      {!demo && viewMode === "map" ? (
-        <div className="mt-4">
-          <ArrivalCards selectedRouteId={selectedRouteId} onSelectRoute={setSelectedRouteId} arrivals={arrivals} />
-        </div>
-      ) : null}
-
-      <div className="mt-auto px-gutter pb-4 pt-4">
+      <div className="px-gutter pt-3">
         <PrimaryButton
-          label={recommendation ? buttonLabel(recommendation) : pressure.loading ? "Checking conditions" : "See timeline"}
+          label="Leave now"
           icon={
             <span className="flex text-on-ink">
               <ClockIcon className="h-4 w-4" />
             </span>
           }
-          onClick={() => router.push("/plan")}
+          value={journey ? `~${clock(journey.endTime)}` : undefined}
+          onClick={leaveNow}
+          disabled={!!scenario || !tripEnd}
         />
+        {journey ? <p className="mt-1 text-center text-footnote text-blue opacity-footnote">Estimated arrival · {journey.realTime ? "realtime PRT" : "scheduled times"}</p> : null}
       </div>
+
+      <div className="mt-4">
+        <PressureModule state={pressure} whenLabel={pressureWhen} />
+      </div>
+
+      {/* Live next-bus predictions cover three tracked routes near CMU. They are
+          context for riders starting there, not a claim about the itinerary. */}
+      {nearCmu ? (
+        <div className="mt-2 px-gutter">
+          <Disclosure label="Next bus near CMU" summary="live PRT">
+            <ArrivalCards selectedRouteId={selectedRouteId} onSelectRoute={setSelectedRouteId} arrivals={arrivals} compact />
+          </Disclosure>
+        </div>
+      ) : null}
+
+      <div className="mt-auto px-gutter pb-4 pt-4">
+        <button
+          type="button"
+          onClick={() => setChatOpen(true)}
+          className="flex h-control w-full items-center justify-between rounded border border-border bg-surface px-4 text-left text-body text-blue outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
+        >
+          <span>Ask LoadLine: “CMU to the North Shore by 7”</span>
+          <span className="text-footnote opacity-footnote">chat</span>
+        </button>
+      </div>
+
+      <ChatSheet
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        trip={{ originLabel, origin: { label: originLabel, ...origin }, destinationLabel: tripEnd ? destinationLabel : null, destination: tripEnd, departureAt, arriveBy, journeys: journeyList, journey, pressure: pressure.data, demo: !!scenario }}
+      />
     </div>
   );
 }

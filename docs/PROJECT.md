@@ -1,5 +1,17 @@
 # Product: predictive Transit Pressure
 
+## Decision 2026-09-12, afternoon (issue #20, chosen by Nate)
+
+**LoadLine answers how to get there, when to leave, and what could make the trip busier — on one map-centered screen.** Building on #19:
+
+- **Real itineraries.** Origin, destination and departure/arrive-by time drive a provider-backed walking + PRT itinerary (Transitous/MOTIS public API, key-free, verified for Pittsburgh). The map draws walking legs, boarding/alighting stops, route and direction, transfers and the final walk; the summary shows the provider's estimated arrival and total duration (walking + waiting + riding). Arrival is always labeled an estimate and marked realtime or scheduled. No routing engine of our own; no fabricated travel times. The nearest tracked route is never presented as a route to the destination.
+- **One shared trip state.** Manual fields, the chat planner, the map, the itinerary, the pressure module and the timeline read and write the same origin/destination/time/journey. Older routing responses never overwrite newer selections.
+- **Chat planner replaces the Scenarios page.** "Ask LoadLine" is a sheet on the home screen. With `ANTHROPIC_API_KEY` Claude interprets requests and explains validated results through server-side tools; without it a deterministic guided parser handles common phrasings and says so. Neither can invent routes, schedules, events or ETAs: every action is validated against real results before it changes the trip. The three deterministic scenarios remain via `/?demo=<scenario>&stage=<n>` and the DEMO API mode for verification.
+- **Broader causes, honestly scoped.** Event categories now include concerts, festivals, conventions, campus events, theater and other ticketed events (Ticketmaster venue coordinates, optional key), plus verified PRT alerts. Rider-reported causes are accepted from chat as separate, unverified signals with reduced weight and an explicit label. Each result lists its coverage gaps; absence of a known event is never shown as "nothing is happening".
+- **Concise home, expandable evidence.** Advice, WHY, event impact and sources are collapsed by default; "Model index, not occupancy" stays visible. The timeline's bars are mouse/touch/keyboard selectable and open a "What's happening today/tomorrow/<date>" section built only from that sample's evidence (event name, venue, timing, source, estimated-end label, weather and service detail, model advice).
+
+Unchanged non-negotiables: 0–100 heuristic model index, never occupancy; estimated event ends are labeled; missing sources lower confidence; Pittsburgh local time throughout. Interfaces: [ARCHITECTURE](ARCHITECTURE.md).
+
 ## Decision 2026-09-12 (issue #19, approved by Nate)
 
 **LoadLine predicts Transit Pressure.** For a destination and time it combines event timing and proximity (Pirates, Steelers, Penguins; concerts with an optional key), hourly weather, time-of-day patterns, PRT scheduled service and PRT GTFS-Realtime delays/alerts into one explained 0–100 model index, an upcoming surge window, the reasons (WHY) and a departure recommendation. This supersedes the capacity-first milestone below, which stays as history and as the boundary for any future occupancy work.

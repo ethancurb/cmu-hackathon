@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
 import { Headline } from "@/components/Headline";
@@ -8,13 +8,14 @@ import { Select } from "@/components/Select";
 import { Divider } from "@/components/Divider";
 import { ListRow } from "@/components/ListRow";
 import { PrimaryButton } from "@/components/PrimaryButton";
+import { Disclosure } from "@/components/Disclosure";
 import { PressureTimeline } from "./PressureTimeline";
 import { useAppState } from "@/lib/app-context";
 import { useDeviceLocation } from "@/lib/geolocation";
 import { usePressure } from "@/lib/pressure/use-pressure";
 import { SCENARIO_DEFINITIONS } from "@/lib/pressure/demo";
 import { clock, timeRange, tomorrowAtLocalHour, LEVEL_WORD } from "@/lib/pressure/format";
-import { loadCachedDestination } from "@/lib/destination-cache";
+import { dayTitle, explainSample, type EvidenceItem } from "@/lib/pressure/explain";
 import type { PressureResult } from "@/lib/pressure/types";
 
 const DAY_OPTIONS = ["Today", "Tomorrow"];
@@ -60,39 +61,36 @@ function optionsFor(result: PressureResult): Option[] {
   return options;
 }
 
+const BASIS_LABEL: Record<EvidenceItem["basis"], string> = { VERIFIED: "verified feed", RIDER: "rider report · unverified", MODEL: "model pattern / forecast" };
+
 export default function PlanPage() {
   const router = useRouter();
-  const { applyDepartureAt, demo } = useAppState();
+  const { applyDepartureAt, demo, destination, manualOrigin, riderSignals } = useAppState();
   const device = useDeviceLocation();
-  const [destination, setDestination] = useState<{ label: string; lat: number; lng: number } | null>(null);
   const [day, setDay] = useState(DAY_OPTIONS[0]);
   const [horizon, setHorizon] = useState(HORIZON_OPTIONS[0]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>("recommendation");
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      const cached = loadCachedDestination();
-      if (cached) setDestination(cached);
-    });
-  }, []);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
 
   const scenario = demo ? SCENARIO_DEFINITIONS[demo.scenario] : null;
-  const origin = scenario ? { lat: scenario.location.lat, lng: scenario.location.lng } : { lat: device.lat, lng: device.lng };
+  const origin = scenario ? { lat: scenario.location.lat, lng: scenario.location.lng } : manualOrigin ? { lat: manualOrigin.lat, lng: manualOrigin.lng } : { lat: device.lat, lng: device.lng };
   const tripEnd = scenario ? { lat: scenario.destination.lat, lng: scenario.destination.lng } : destination ? { lat: destination.lat, lng: destination.lng } : null;
   // "Tomorrow" starts the timeline at 7 AM Pittsburgh time; the demo scenarios carry their own fixed clock.
   const at = useMemo(() => (!scenario && day === "Tomorrow" ? tomorrowAtLocalHour(TOMORROW_START_HOUR) : null), [day, scenario]);
-  const pressure = usePressure({ origin, destination: tripEnd, at, horizonMinutes: HORIZON_MINUTES[horizon], demo });
+  const pressure = usePressure({ origin, destination: tripEnd, at, horizonMinutes: HORIZON_MINUTES[horizon], demo, riderSignals });
   const result = pressure.data;
 
   const options = useMemo(() => (result ? optionsFor(result) : []), [result]);
   const recommendedIndex = options[0]?.index ?? 0;
   const activeIndex = selectedIndex ?? recommendedIndex;
   const selectedSample = result?.timeline[activeIndex] ?? null;
+  const explanation = useMemo(() => (result ? explainSample(result, activeIndex) : null), [result, activeIndex]);
 
   function selectSample(index: number) {
     setSelectedIndex(index);
     setSelectedOptionId(options.find((o) => o.index === index)?.id ?? null);
+    setEvidenceOpen(true);
   }
 
   function selectOption(option: Option) {
@@ -108,7 +106,9 @@ export default function PlanPage() {
     router.push("/");
   }
 
-  const subhead = scenario ? `${scenario.location.label} → ${scenario.destination.label}` : destination?.label ?? "Morewood Avenue";
+  const subhead = scenario
+    ? `${scenario.location.label} → ${scenario.destination.label}`
+    : `${manualOrigin?.label ?? (device.source === "device" ? "Your location" : "Carnegie Mellon")} → ${destination?.label ?? "no destination yet"}`;
   const headline = result?.surge ? "Beat the surge." : result && result.current.level === "LOW" ? "A quiet trip." : "A quieter trip.";
 
   return (
@@ -140,7 +140,7 @@ export default function PlanPage() {
             bestWindow={result.bestWindow}
             selectedIndex={activeIndex}
             onSelect={selectSample}
-            caption="Tap a bar to compare departure times."
+            caption="Tap a bar (or use ← →) to see what drives that time."
           />
         ) : (
           <div className="flex flex-col items-center px-gutter">
@@ -150,10 +150,43 @@ export default function PlanPage() {
         )}
       </div>
 
-      <div className="mt-[11px] flex flex-col">
-        <div className="px-gutter">
+      {/* What's happening at the selected bar: only that sample's evidence. */}
+      {result && explanation ? (
+        <div className="mt-[11px] px-gutter">
+          <Divider />
+          <Disclosure
+            label={dayTitle(explanation.at)}
+            summary={`${explanation.score} / 100`}
+            open={evidenceOpen}
+            onOpenChange={setEvidenceOpen}
+          >
+            <section aria-label="Evidence for the selected time" className="flex flex-col gap-2">
+              <p className="text-body text-blue">{explanation.headline}</p>
+              <ul className="flex flex-col gap-[6px]">
+                {explanation.items.map((item, i) => (
+                  <li key={`${item.kind}-${i}`} className="flex flex-col">
+                    <span className="flex items-baseline justify-between gap-3">
+                      <span className="min-w-0 text-body font-bold text-blue">{item.event ? item.event.name : item.title}</span>
+                      <span className="shrink-0 text-body font-bold text-blue">+{item.contribution}</span>
+                    </span>
+                    {item.event ? <span className="text-body text-blue">{item.title.replace(`${item.event.name} · `, "")}</span> : null}
+                    {item.detail ? <span className="text-footnote text-blue opacity-footnote">{item.detail}</span> : null}
+                    <span className="text-footnote text-blue opacity-footnote">{BASIS_LABEL[item.basis]}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-body text-blue">{explanation.advice}</p>
+              {explanation.noEvent && explanation.gaps.length ? (
+                <p className="text-footnote text-blue opacity-footnote">No event is known for this time, which is not the same as nothing happening. Not covered: {explanation.gaps.join("; ")}.</p>
+              ) : null}
+              <p className="text-footnote text-blue opacity-footnote">Model index, not occupancy · Pittsburgh local time</p>
+            </section>
+          </Disclosure>
           <Divider />
         </div>
+      ) : null}
+
+      <div className="mt-[11px] flex flex-col">
         <p className="px-gutter py-[11px] text-section-label text-blue">Departure windows</p>
         <div role="radiogroup" aria-label="Departure windows">
           {options.map((option, i) => (

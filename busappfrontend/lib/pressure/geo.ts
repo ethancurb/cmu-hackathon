@@ -31,3 +31,10 @@ export function corridorDistanceKm(point: Point, from: Point, to?: Point | null)
   const cx = ax + t * dx, cy = ay + t * dy;
   return Math.hypot(cx, cy);
 }
+
+/** Service area accepted by the API routes (roughly Allegheny County). */
+export const PITTSBURGH_BOUNDS = { latMin: 40.25, latMax: 40.65, lngMin: -80.25, lngMax: -79.65 } as const;
+
+export function inPittsburgh(p: Point): boolean {
+  return p.lat >= PITTSBURGH_BOUNDS.latMin && p.lat <= PITTSBURGH_BOUNDS.latMax && p.lng >= PITTSBURGH_BOUNDS.lngMin && p.lng <= PITTSBURGH_BOUNDS.lngMax;
+}

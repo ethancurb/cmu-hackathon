@@ -48,6 +48,7 @@ export const SCENARIO_DEFINITIONS: Record<Scenario, ScenarioDefinition> = {
       magnitude: "MAJOR",
       source: "Authored demo scenario",
       confidence: "MEDIUM",
+      evidence: "VERIFIED",
     },
     stages: [
       { label: "Normal Saturday evening", short: "Normal" },
@@ -76,6 +77,7 @@ export const SCENARIO_DEFINITIONS: Record<Scenario, ScenarioDefinition> = {
       magnitude: "LARGE",
       source: "Authored demo scenario",
       confidence: "MEDIUM",
+      evidence: "VERIFIED",
     },
     stages: [
       { label: "Normal Friday night", short: "Normal" },

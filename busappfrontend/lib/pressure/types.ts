@@ -14,7 +14,10 @@ export type DataFreshness = {
   detail: string;
 };
 
-export type EventCategory = "BASEBALL" | "FOOTBALL" | "HOCKEY" | "CONCERT";
+export type EventCategory = "BASEBALL" | "FOOTBALL" | "HOCKEY" | "CONCERT" | "FESTIVAL" | "CONVENTION" | "CAMPUS" | "THEATER" | "OTHER";
+
+/** Where a signal came from. VERIFIED = a published schedule/feed; RIDER = typed in by the rider, unverified. */
+export type EvidenceKind = "VERIFIED" | "RIDER";
 export type EventMagnitude = "SMALL" | "MEDIUM" | "LARGE" | "MAJOR";
 
 export type EventSignal = Point & {
@@ -29,7 +32,22 @@ export type EventSignal = Point & {
   /** Documented magnitude class by venue/category — not an attendance figure. */
   magnitude: EventMagnitude;
   source: string;
-  confidence: "MEDIUM" | "HIGH";
+  confidence: "LOW" | "MEDIUM" | "HIGH";
+  evidence: EvidenceKind;
+};
+
+/** A rider-reported cause ("there is a festival at Schenley Plaza at 5"). It is
+ * validated, weighted below verified feeds and always labeled unverified. */
+export type RiderSignal = {
+  id: string;
+  name: string;
+  venue: string;
+  lat: number;
+  lng: number;
+  startTime: string;
+  /** Rider-supplied or a duration assumption; always flagged estimated. */
+  endTime: string;
+  category: EventCategory;
 };
 
 export type WeatherSignal = {
@@ -71,7 +89,15 @@ export type SignalBundle = {
 };
 
 export type ReasonType = "TIME" | "EVENT" | "WEATHER" | "TRANSIT" | "SERVICE";
-export type DemandReason = { type: ReasonType; label: string; contribution: number };
+export type DemandReason = {
+  type: ReasonType;
+  label: string;
+  contribution: number;
+  /** Links an EVENT reason to `PressureResult.events` for per-sample evidence. */
+  eventId?: string;
+  /** Sample-specific supporting detail (forecast values, venue and phase, alert text). */
+  detail?: string;
+};
 
 export type PressureLevel = "LOW" | "MODERATE" | "HIGH" | "SURGE";
 export type Confidence = "LOW" | "MEDIUM" | "HIGH";
@@ -135,7 +161,11 @@ export type PressureResult = {
   eventImpacts: EventImpact[];
   upcoming: UpcomingEvent[];
   freshness: DataFreshness[];
+  /** Every in-reach event the model considered (verified and rider-reported), for evidence panels. */
+  events: EventSignal[];
   coverage: string;
+  /** Causes this result cannot see. Absence of a listed cause is not evidence of quiet. */
+  coverageGaps: string[];
   scenario?: string;
   stage?: number;
   stageLabel?: string;

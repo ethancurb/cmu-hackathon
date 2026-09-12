@@ -15,10 +15,11 @@ type NavBarProps = {
   onBack?: () => void;
 };
 
+// Scenarios are no longer a public screen: deterministic demos stay reachable
+// through `/?demo=<scenario>&stage=<n>` (presenter strip) and the DEMO API mode.
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/plan", label: "Pressure timeline" },
-  { href: "/demo", label: "Scenarios" },
 ];
 
 const focusRing = "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
@@ -27,7 +28,7 @@ const focusRing = "outline-none focus-visible:outline-2 focus-visible:outline-of
  * 54px tall (40px × 1.354 viewport factor). With a backLabel: three-part row,
  * a grid with equal-width flanking columns keeps the wordmark truly (not just
  * visually) centered. Without one: two-part row, wordmark left, hamburger right.
- * The hamburger opens a small square-cornered panel with the three screens.
+ * The hamburger opens a small square-cornered panel with the app's screens.
  */
 export function NavBar({ backLabel, wordmark = "LoadLine", onBack }: NavBarProps) {
   const [open, setOpen] = useState(false);

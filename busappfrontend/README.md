@@ -33,7 +33,13 @@ node scripts/probe-signals.mjs  # read-only reachability check of every live sou
 
 ## Environment variables
 
-None required. Optional: `TICKETMASTER_API_KEY` (concerts), `DATA_MODE=DEMO` (default the API to scenarios). Keep keys in `.env.local`, never in Git.
+None required. Optional, all in `.env.local` (never in Git):
+
+- `ANTHROPIC_API_KEY` — enables the Claude-backed chat planner (`lib/chat/model.ts`, model `claude-opus-5`, server-side only). Without it `/api/chat` runs the deterministic guided parser and the sheet says so; the model is never faked.
+- `TICKETMASTER_API_KEY` — concerts, theater, festivals and other ticketed events within 15 miles (venue coordinates from the feed). Without it those causes are listed as coverage gaps.
+- `DATA_MODE=DEMO` — default `/api/pressure` to the deterministic scenarios.
+
+Routing (`/api/journey`) uses the public Transitous (MOTIS) instance over PRT GTFS: key-free, identified by User-Agent, cached 45 s per request. Geocoding uses Photon (key-free).
 
 ## Rules that keep the product honest
 

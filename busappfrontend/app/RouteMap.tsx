@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Chip } from "@/components/Chip";
 import { IconToggle } from "@/components/IconToggle";
 import { CloudIcon, SunIcon, ChatIcon, CrosshairIcon, StatsIcon } from "@/components/icons/filled";
 import type { RouteId } from "@/lib/mock-data";
 import type { ViewMode } from "@/lib/app-context";
+import type { Journey } from "@/lib/journey/types";
 import { useDeviceLocation } from "@/lib/geolocation";
 import { useWeather } from "@/lib/weather";
 import { ViewToggle } from "./ViewToggle";
@@ -14,32 +15,45 @@ import { MapCanvas, type Destination, type EventMarker, type MapCanvasHandle } f
 const MAP_HEIGHT = 340;
 const INSET = 11; // 8px spec value × 1.354
 
-/** Small illustrative "the map recentered on this route's bus" pan per route —
- * not derived from real geometry, just enough to make selecting a different
- * route visibly shift the view. */
-const ROUTE_FOCUS_OFFSET: Record<RouteId, { x: number; y: number }> = {
-  "71": { x: 14, y: -8 },
-  "61": { x: 0, y: 0 },
-  "54": { x: -6, y: 14 },
-};
+const FOCUS_RING = "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 
 type RouteMapProps = {
   activeRouteId: RouteId;
   onSelectRoute: (id: RouteId) => void;
   destination: Destination;
-  /** Scenario origin; when null the rider's device location (or CMU fallback) is used. */
+  /** Manual or scenario origin; when null the rider's device location (or CMU fallback) is used. */
   origin?: Destination;
   /** Scenario weather chip; when null the live Open-Meteo reading is shown. */
   weatherOverride?: { label: string; icon: "sun" | "cloud" } | null;
   /** Venue of the event currently driving pressure, if any. */
   eventMarker?: EventMarker;
+  /** Selected provider-backed itinerary, drawn on the map. */
+  journey?: Journey | null;
   /** Opens the pressure timeline (the map's stats button). */
   onOpenTimeline?: () => void;
+  /** Opens the chat planner (the map's chat button). */
+  onOpenChat?: () => void;
   weatherDismissed: boolean;
   onDismissWeather: () => void;
   viewMode: ViewMode;
   onSetViewMode: (mode: ViewMode) => void;
 };
+
+/** Compact square map control (zoom, fit): same border/fill treatment as
+ * IconToggle at a smaller 36px size so three of them stack beside the map edge. */
+function MapButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`flex h-9 w-9 items-center justify-center rounded border border-border-soft bg-surface text-row-title font-bold text-ink-deep ${FOCUS_RING}`}
+    >
+      {children}
+    </button>
+  );
+}
 
 export function RouteMap({
   activeRouteId,
@@ -48,7 +62,9 @@ export function RouteMap({
   origin = null,
   weatherOverride = null,
   eventMarker = null,
+  journey = null,
   onOpenTimeline,
+  onOpenChat,
   weatherDismissed,
   onDismissWeather,
   viewMode,
@@ -59,35 +75,13 @@ export function RouteMap({
   const liveWeather = useWeather(location.lat, location.lng);
   const weather = weatherOverride ? { ...weatherOverride, loading: false, error: false } : liveWeather;
   const mapRef = useRef<MapCanvasHandle>(null);
-  // Selecting a different arrival card "recenters" the map on that route (a
-  // real, if illustrative, effect). Locate resets the view back to the
-  // rider's own location (the origin ring), independent of route selection.
-  const [locatedAtOrigin, setLocatedAtOrigin] = useState(false);
-  // Picking a different route resumes route-following — "locate" only wins
-  // until the next route change. Adjusted during render (React's recommended
-  // pattern for resetting state on a prop change) rather than in an effect,
-  // since this needs to take effect before the pan is computed for this render.
-  const [lastActiveRouteId, setLastActiveRouteId] = useState(activeRouteId);
-  if (activeRouteId !== lastActiveRouteId) {
-    setLastActiveRouteId(activeRouteId);
-    setLocatedAtOrigin(false);
-  }
-  const offset = locatedAtOrigin ? { x: 0, y: 0 } : ROUTE_FOCUS_OFFSET[activeRouteId];
 
   return (
     <div
       className="relative w-full overflow-hidden rounded border border-border-soft bg-surface"
       style={{ height: MAP_HEIGHT }}
     >
-      {/* Fluid width, fixed height. MapCanvas fills this box and draws its
-          own real-coordinate overlay (routes, origin marker) sized to its
-          actual measured pixels; the destination pin/labels below stay
-          fixed-position decoration and get clipped by overflow-hidden on
-          narrow viewports rather than escaping the container. */}
-      <div
-        className="absolute inset-0 motion-reduce:transition-none motion-reduce:duration-0"
-        style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, transition: "transform 200ms ease-out" }}
-      >
+      <div className="absolute inset-0">
         <MapCanvas
           ref={mapRef}
           lat={location.lat}
@@ -95,25 +89,12 @@ export function RouteMap({
           activeRouteId={activeRouteId}
           destination={destination}
           eventMarker={eventMarker}
+          journey={journey}
           onNearestRoute={onSelectRoute}
         />
-
-        {/* Map annotations: neighborhood labels, as shown directly on the
-            reference map. Sized with the generic (unsolved, provisional)
-            label token — no target string was measured for these. */}
-        {!destination && !origin ? (
-          <>
-            <span className="absolute text-label text-blue" style={{ left: INSET, bottom: 60 }}>
-              Oakland
-            </span>
-            <span className="absolute text-label text-blue" style={{ right: INSET, bottom: 60 }}>
-              Campus
-            </span>
-          </>
-        ) : null}
       </div>
 
-      {/* Floating UI stays fixed to the panel's corners — it doesn't pan with the map content. */}
+      {/* Floating UI stays fixed to the panel's corners; it does not pan with the map. */}
       {!weatherDismissed && !weather.loading ? (
         <div className="absolute" style={{ left: INSET, top: INSET }}>
           <Chip
@@ -126,11 +107,22 @@ export function RouteMap({
 
       <ViewToggle viewMode={viewMode} onChange={onSetViewMode} />
 
-      {/* Utility buttons: chat + stats grouped bottom-left, locate alone
-          bottom-right. Stats opens the pressure timeline; chat has no
-          conversational backend, so it stays visibly disabled rather than dead. */}
+      {/* Camera controls: zoom in/out and fit the whole trip, stacked on the right edge. */}
+      <div className="absolute flex flex-col" style={{ right: INSET, top: 84, gap: 3 }}>
+        <MapButton label="Zoom in" onClick={() => mapRef.current?.zoomBy(1)}>
+          +
+        </MapButton>
+        <MapButton label="Zoom out" onClick={() => mapRef.current?.zoomBy(-1)}>
+          −
+        </MapButton>
+        <MapButton label="Fit route" onClick={() => mapRef.current?.fitTrip()}>
+          <span className="block h-3 w-3 border border-ink-deep" aria-hidden />
+        </MapButton>
+      </div>
+
+      {/* Utility buttons: chat + stats grouped bottom-left, locate alone bottom-right. */}
       <div className="absolute flex" style={{ left: INSET, bottom: INSET, gap: 3 }}>
-        <IconToggle icon={<ChatIcon className="h-[22px] w-[22px]" />} label="Ask LoadLine (not available yet)" showIndicator={false} disabled />
+        <IconToggle icon={<ChatIcon className="h-[22px] w-[22px]" />} label="Ask LoadLine" showIndicator={false} onClick={onOpenChat} />
         <IconToggle icon={<StatsIcon className="h-[22px] w-[22px]" />} label="Pressure timeline" showIndicator={false} onClick={onOpenTimeline} />
       </div>
       <div className="absolute" style={{ right: INSET, bottom: INSET }}>
@@ -138,10 +130,7 @@ export function RouteMap({
           icon={<CrosshairIcon className="h-[22px] w-[22px]" />}
           label="Locate me"
           showIndicator={false}
-          onClick={() => {
-            setLocatedAtOrigin(true);
-            mapRef.current?.flyTo(location.lat, location.lng);
-          }}
+          onClick={() => mapRef.current?.flyTo(location.lat, location.lng)}
         />
       </div>
     </div>

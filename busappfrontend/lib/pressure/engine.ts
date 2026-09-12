@@ -13,6 +13,7 @@ import type {
   PressureLevel,
   PressureResult,
   Recommendation,
+  RiderSignal,
   SignalBundle,
   SurgeWindow,
   UpcomingEvent,
@@ -164,7 +165,14 @@ function eventReasons(bundle: SignalBundle, at: string): DemandReason[] {
   for (const { event, effect } of ranked) {
     const value = Math.min(budget, Math.round(effect.value));
     if (value <= 0) continue;
-    reasons.push({ type: "EVENT", label: `${event.name} · ${effect.phase}`, contribution: value });
+    const rider = event.evidence === "RIDER";
+    reasons.push({
+      type: "EVENT",
+      label: `${event.name} · ${effect.phase}${rider ? " (rider-reported)" : ""}`,
+      contribution: value,
+      eventId: event.id,
+      detail: `${event.venue} · ${effect.distanceKm.toFixed(1)} km from this trip · ${rider ? "unverified rider report" : event.source}`,
+    });
     budget -= value;
   }
   return reasons;
@@ -199,7 +207,8 @@ export function weatherReason(bundle: SignalBundle, at: string): DemandReason | 
           : temperature
             ? "Extreme temperature"
             : "Chance of rain";
-  return { type: "WEATHER", label, contribution };
+  const detail = `${Math.round(hour.precipitationProbability)}% precipitation chance · ${hour.rainMm > 0 ? `${hour.rainMm} mm rain · ` : ""}${hour.snowCm > 0 ? `${hour.snowCm} cm snow · ` : ""}${Math.round(hour.temperatureC)}°C · wind ${Math.round(hour.windKph)} km/h (hourly forecast)`;
+  return { type: "WEATHER", label, contribution, detail };
 }
 
 // ---------------------------------------------------------------------------
@@ -231,7 +240,12 @@ export function transitReason(bundle: SignalBundle, at: string): DemandReason | 
     delay >= alertPoints
       ? `Reported delay near this stop area (${Math.round(bundle.transit.delayMinutes ?? 0)} min)`
       : alerts[0].label;
-  return { type: "TRANSIT", label, contribution };
+  const parts = [
+    bundle.transit.delayMinutes !== null ? `largest reported delay ${Math.round(bundle.transit.delayMinutes)} min` : "no explicit delay field",
+    alerts.filter((a) => a.points > 0).length ? `${alerts.filter((a) => a.points > 0).length} active alert(s): ${alerts.filter((a) => a.points > 0).map((a) => a.label).join("; ")}` : "no active alerts",
+    `evidence weight ${Math.round(weight * 100)}% (fades with age)`,
+  ];
+  return { type: "TRANSIT", label, contribution, detail: `PRT GTFS-Realtime · ${parts.join(" · ")}` };
 }
 
 // ---------------------------------------------------------------------------
@@ -257,7 +271,7 @@ export function serviceReason(bundle: SignalBundle, at: string): DemandReason | 
   const gap = Math.min(...gaps);
   const contribution = Math.round(clamp((gap - SERVICE.gapFromMinutes) * SERVICE.pointsPerMinute, 0, SERVICE.max));
   if (!contribution) return null;
-  return { type: "SERVICE", label: `Sparse scheduled service nearby (~${Math.round(gap)} min gap)`, contribution };
+  return { type: "SERVICE", label: `Sparse scheduled service nearby (~${Math.round(gap)} min gap)`, contribution, detail: "PRT GTFS schedule snapshot; gap between the next two departures on one stop, route and direction. Not live service." };
 }
 
 // ---------------------------------------------------------------------------
@@ -464,6 +478,44 @@ function upcomingEvents(bundle: SignalBundle, timelineEnd: string, impacted: Set
     }));
 }
 
+/** Converts a rider-reported cause into a bounded event signal. It never gets a
+ * MAJOR magnitude, its end is always an estimate, and it is labeled unverified. */
+export function riderSignalToEvent(signal: RiderSignal): EventSignal {
+  return {
+    id: signal.id,
+    name: signal.name,
+    category: signal.category,
+    venue: signal.venue,
+    lat: signal.lat,
+    lng: signal.lng,
+    startTime: signal.startTime,
+    endTime: signal.endTime,
+    endEstimated: true,
+    magnitude: "MEDIUM",
+    source: "Rider report (unverified)",
+    confidence: "LOW",
+    evidence: "RIDER",
+  };
+}
+
+/** Causes the model cannot see with the sources it actually had. Listing them
+ * keeps "no event found" from reading as "nothing is happening". */
+export function coverageGaps(bundle: SignalBundle): string[] {
+  const status = (name: string) => bundle.freshness.find((f) => f.source === name)?.status;
+  const gaps: string[] = [];
+  if (bundle.mode !== "DEMO") {
+    const sports = ["MLB schedule", "NHL schedule", "ESPN schedule"].filter((n) => status(n) === "LIVE" || status(n) === "STALE").length;
+    if (sports < 3) gaps.push(`${3 - sports} of 3 pro sports schedules unavailable this run`);
+    if (status("Ticketmaster") !== "LIVE" && status("Ticketmaster") !== "STALE") gaps.push("Concerts, theater, festivals and ticketed events (needs TICKETMASTER_API_KEY)");
+    gaps.push("Campus events, conventions, parades and road closures (no feed connected)");
+    if (status("PRT realtime") !== "LIVE") gaps.push("Live service disruptions (PRT realtime feed not usable this run)");
+    if (!bundle.weather.length) gaps.push("Weather forecast");
+  } else {
+    gaps.push("Deterministic scenario: only the authored signals exist");
+  }
+  return gaps;
+}
+
 export function buildPressure(bundle: SignalBundle, start: string, horizonMinutes: number = TIMELINE.defaultHorizonMinutes): PressureResult {
   const horizon = clamp(horizonMinutes, TIMELINE.stepMinutes, TIMELINE.maxHorizonMinutes);
   const samples = Math.floor(horizon / TIMELINE.stepMinutes) + 1;
@@ -489,6 +541,8 @@ export function buildPressure(bundle: SignalBundle, start: string, horizonMinute
     eventImpacts: impacts,
     upcoming: upcomingEvents(bundle, timeline[timeline.length - 1].at, new Set(impacts.map((i) => i.event.id))),
     freshness: bundle.freshness,
+    events: bundle.events.filter((e) => corridorDistanceKm(e, bundle.location, bundle.destination) < EVENT.reachKm),
     coverage: COVERAGE_NOTE,
+    coverageGaps: coverageGaps(bundle),
   };
 }

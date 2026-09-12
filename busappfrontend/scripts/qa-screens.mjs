@@ -1,5 +1,5 @@
 // Responsive runtime QA against a running server (default http://localhost:3100).
-// Captures home (live + demo stages), plan and demo screens at phone/tablet/desktop
+// Captures home (live + demo stages) and plan screens at phone/tablet/desktop
 // widths, checks for horizontal overflow and console errors. Writes ../qa/*.png.
 import { chromium } from 'playwright';
 const base = process.env.QA_BASE ?? 'http://localhost:3100';
@@ -9,7 +9,6 @@ const pages = [
   ['home-demo-0', '/?demo=pirates&stage=0'],
   ['home-demo-3', '/?demo=pirates&stage=3'],
   ['plan', '/plan'],
-  ['demo', '/demo'],
 ];
 const browser = await chromium.launch({ headless: true });
 const problems = [];
