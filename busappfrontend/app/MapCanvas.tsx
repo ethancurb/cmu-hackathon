@@ -76,6 +76,16 @@ type RouteFeature = {
   geometry: { coordinates: [number, number][] };
 };
 
+/** Real PRT stop locations (`public/stops.geojson`) — the same hand-curated,
+ * GTFS-sourced set as `lib/prt-routes.ts`'s `NEARBY_STOPS`, with real lat/lng
+ * added. Shown only as map context for the three tracked routes, never as a
+ * claim about which stop a rider's own itinerary boards at (the selected
+ * journey's own board/alight squares already cover that). */
+type StopFeature = {
+  properties: { stopId: string; name: string; routeId: RouteId };
+  geometry: { coordinates: [number, number] };
+};
+
 const APP_ROUTE_IDS = Object.keys(GTFS_ROUTE_ID) as RouteId[];
 
 const INACTIVE_BADGE_CLASS: Record<RouteId, string> = {
@@ -108,7 +118,8 @@ function nearestRouteId(lat: number, lng: number, shapes: RouteFeature[]): Route
 
 type Point = { x: number; y: number };
 type ProjectedLeg = { path: string; mode: "WALK" | "TRANSIT"; board: Point | null; alight: Point | null; label: string | null };
-type ProjectedVehicle = Point & { id: string; routeId: string; ageSeconds: number };
+type ProjectedVehicle = Point & { id: string; routeId: string; bearing: number | null; ageSeconds: number };
+type ProjectedStop = Point & { stopId: string; name: string; routeId: RouteId };
 type Projected = {
   paths: Partial<Record<RouteId, string>>;
   anchors: Partial<Record<RouteId, Point>>;
@@ -117,9 +128,10 @@ type Projected = {
   event: Point | null;
   legs: ProjectedLeg[];
   vehicles: ProjectedVehicle[];
+  stops: ProjectedStop[];
 };
 
-const EMPTY: Projected = { paths: {}, anchors: {}, origin: null, destination: null, event: null, legs: [], vehicles: [] };
+const EMPTY: Projected = { paths: {}, anchors: {}, origin: null, destination: null, event: null, legs: [], vehicles: [], stops: [] };
 
 function journeyPoints(journey: Journey): LatLng[] {
   return journey.legs.flatMap((leg) => leg.geometry);
@@ -141,7 +153,12 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const shapesRef = useRef<RouteFeature[] | null>(null);
+  const stopsRef = useRef<StopFeature[] | null>(null);
   const frameRef = useRef<number | null>(null);
+  // True only while the rider is actively dragging/inertia-panning — vehicle
+  // markers skip their glide transition then so they track the basemap
+  // exactly instead of trailing behind it, and resume easing once the pan settles.
+  const panningRef = useRef(false);
   const [projected, setProjected] = useState<Projected>(EMPTY);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
@@ -229,8 +246,17 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     const eventPoint = curEvent ? map.project([curEvent.lng, curEvent.lat]) : null;
     const vehiclePoints = curVehicles.map((v) => {
       const p = map.project([v.lng, v.lat]);
-      return { x: p.x, y: p.y, id: v.id, routeId: v.routeId, ageSeconds: v.ageSeconds };
+      return { x: p.x, y: p.y, id: v.id, routeId: v.routeId, bearing: v.bearing, ageSeconds: v.ageSeconds };
     });
+    // Same "step aside once a real itinerary is selected" rule as the tracked
+    // route lines above: stop context is for browsing the three tracked
+    // routes, not a claim about the rider's own selected trip.
+    const stopPoints = curJourney
+      ? []
+      : (stopsRef.current ?? []).map((s) => {
+          const p = map.project(s.geometry.coordinates);
+          return { x: p.x, y: p.y, stopId: s.properties.stopId, name: s.properties.name, routeId: s.properties.routeId };
+        });
     setProjected({
       paths,
       anchors,
@@ -239,6 +265,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       event: eventPoint ? { x: eventPoint.x, y: eventPoint.y } : null,
       legs,
       vehicles: vehiclePoints,
+      stops: stopPoints,
     });
   };
 
@@ -271,8 +298,14 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     map.touchZoomRotate.disableRotation();
     mapRef.current = map;
     map.on("load", recompute);
+    map.on("movestart", () => {
+      panningRef.current = true;
+    });
     map.on("move", scheduleRecompute);
-    map.on("moveend", recompute);
+    map.on("moveend", () => {
+      panningRef.current = false;
+      recompute();
+    });
 
     fetch("/route-shapes.geojson")
       .then((res) => res.json())
@@ -288,6 +321,16 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       .catch(() => {
         // Route overlay stays empty (basemap alone still renders) rather
         // than showing stale or invented route lines.
+      });
+
+    fetch("/stops.geojson")
+      .then((res) => res.json())
+      .then((geojson: { features: StopFeature[] }) => {
+        stopsRef.current = geojson.features;
+        recompute();
+      })
+      .catch(() => {
+        // Stop markers stay empty — same honest degrade as the route overlay.
       });
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -386,6 +429,19 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
               strokeLinejoin="round"
             />
           ))}
+          {projected.stops.map((s) => (
+            <circle
+              key={s.stopId}
+              cx={s.x}
+              cy={s.y}
+              r={3.5}
+              fill="var(--surface)"
+              stroke="var(--border-soft)"
+              strokeWidth={1.5}
+            >
+              <title>{`${s.name} · Route ${s.routeId} stop`}</title>
+            </circle>
+          ))}
           {projected.legs.map((leg, i) =>
             leg.board && leg.alight ? (
               <g key={`stops-${i}`}>
@@ -395,9 +451,27 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
             ) : null,
           )}
           {projected.vehicles.map((v) => (
-            <g key={v.id}>
+            <g
+              key={v.id}
+              className={
+                panningRef.current
+                  ? undefined
+                  : "transition-transform duration-700 ease-out motion-reduce:transition-none motion-reduce:duration-0"
+              }
+              style={{ transform: `translate(${v.x}px, ${v.y}px)` }}
+            >
               <title>{`Route ${v.routeId} · live GPS position · updated ${v.ageSeconds}s ago`}</title>
-              <circle cx={v.x} cy={v.y} r={6} fill="var(--ink-deep)" stroke="var(--surface)" strokeWidth={2} />
+              {/* Soft static halo reads as "live" without an attention-grabbing pulse. */}
+              <circle r={9} fill="var(--ink-deep)" opacity={0.08} />
+              {/* Small top-down bus, cartoon-simple like a rideshare-app car marker:
+                  a rounded body with a bright windshield "face" toward the direction
+                  of travel and a dimmer rear window. Faces north (unrotated) when the
+                  feed has no bearing for this vehicle. */}
+              <g transform={v.bearing !== null ? `rotate(${v.bearing})` : undefined}>
+                <rect x={-4} y={-6.5} width={8} height={13} rx={2.2} fill="var(--ink-deep)" stroke="var(--surface)" strokeWidth={1.2} />
+                <rect x={-2.6} y={-5.1} width={5.2} height={2.6} rx={1} fill="var(--surface)" />
+                <rect x={-2.6} y={3.6} width={5.2} height={1.6} rx={0.8} fill="var(--surface)" opacity={0.55} />
+              </g>
             </g>
           ))}
           {projected.origin ? (

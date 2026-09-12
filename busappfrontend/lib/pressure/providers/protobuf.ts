@@ -23,7 +23,7 @@ const number=(fs:Field[],n:number)=>{const v=raw(fs,n);return typeof v==="bigint
 const signed=(fs:Field[],n:number)=>{const v=raw(fs,n);return typeof v==="bigint"?Number(BigInt.asIntN(32,v)):null;};
 export type DecodedFeed = {
   timestamp:number; trips:{routeId:string;tripId:string;stopId:string;delay:number|null;time:number|null}[];
-  vehicles:{id:string;routeId:string;lat:number;lng:number;timestamp:number|null}[];
+  vehicles:{id:string;routeId:string;lat:number;lng:number;bearing:number|null;timestamp:number|null}[];
   alerts:{label:string;routes:string[];stops:string[];effect:number|null;periods:{start:number|null;end:number|null}[]}[];
 };
 export function decodeFeed(bytes:Uint8Array):DecodedFeed {
@@ -38,8 +38,8 @@ export function decodeFeed(bytes:Uint8Array):DecodedFeed {
       const timing=child(stop,2).length?child(stop,2):child(stop,3);
       result.trips.push({routeId:text(descriptor,5),tripId:text(descriptor,1),stopId:text(stop,4),delay:signed(timing,1)??signed(trip,5),time:number(timing,2)});
     }
-    const vehicle=child(entity,4),position=child(vehicle,2),lat=number(position,1),lng=number(position,2);
-    if(lat!==null&&lng!==null&&Math.abs(lat)<=90&&Math.abs(lng)<=180)result.vehicles.push({id:text(child(vehicle,8),1),routeId:text(child(vehicle,1),5),lat,lng,timestamp:number(vehicle,5)});
+    const vehicle=child(entity,4),position=child(vehicle,2),lat=number(position,1),lng=number(position,2),bearing=number(position,3);
+    if(lat!==null&&lng!==null&&Math.abs(lat)<=90&&Math.abs(lng)<=180)result.vehicles.push({id:text(child(vehicle,8),1),routeId:text(child(vehicle,1),5),lat,lng,bearing:bearing!==null&&bearing>=0&&bearing<=360?bearing:null,timestamp:number(vehicle,5)});
     const alert=child(entity,5);
     if(alert.length){const selectors=messages(alert,5);const translations=messages(child(alert,10),1);const label=text(translations.find(t=>text(t,2)==="en")??translations[0]??[],1);
       result.alerts.push({label,routes:selectors.map(s=>text(s,2)).filter(Boolean),stops:selectors.map(s=>text(s,5)).filter(Boolean),effect:number(alert,7),periods:messages(alert,1).map(p=>({start:number(p,1),end:number(p,2)}))});}

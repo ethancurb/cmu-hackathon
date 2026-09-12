@@ -99,7 +99,14 @@ export function LocationField({ value, onChange, onSelectAddress, near }: Locati
         )}
         <button
           type="button"
-          onClick={() => setEditing(true)}
+          onClick={() => {
+            // Clearing the draft here (rather than leaving the old label
+            // selected) means the rider can start typing immediately instead
+            // of deleting the previous value first.
+            setDraft("");
+            setHighlighted(0);
+            setEditing(true);
+          }}
           aria-label="Edit location"
           className={`shrink-0 text-blue ${FOCUS_RING}`}
         >

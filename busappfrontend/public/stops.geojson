@@ -1,0 +1,14 @@
+{"type":"FeatureCollection","features":[
+{"type":"Feature","properties":{"stopId":"1177","name":"Fifth Ave + Morewood Ave","routeId":"71"},"geometry":{"type":"Point","coordinates":[-79.942604,40.447365]}},
+{"type":"Feature","properties":{"stopId":"1167","name":"Fifth Ave + Morewood Ave","routeId":"71"},"geometry":{"type":"Point","coordinates":[-79.942284,40.447476]}},
+{"type":"Feature","properties":{"stopId":"1176","name":"Fifth Ave + Clyde St","routeId":"71"},"geometry":{"type":"Point","coordinates":[-79.944955,40.447201]}},
+{"type":"Feature","properties":{"stopId":"1178","name":"Fifth Ave + Amberson","routeId":"71"},"geometry":{"type":"Point","coordinates":[-79.938893,40.447642]}},
+{"type":"Feature","properties":{"stopId":"1166","name":"Fifth Ave + Amberson","routeId":"71"},"geometry":{"type":"Point","coordinates":[-79.938742,40.447758]}},
+{"type":"Feature","properties":{"stopId":"7117","name":"Forbes Ave + Morewood (Carnegie Mellon)","routeId":"61"},"geometry":{"type":"Point","coordinates":[-79.942291,40.444458]}},
+{"type":"Feature","properties":{"stopId":"4407","name":"Forbes Ave + Morewood Ave FS (Carnegie Mellon)","routeId":"61"},"geometry":{"type":"Point","coordinates":[-79.943756,40.444698]}},
+{"type":"Feature","properties":{"stopId":"7119","name":"Forbes Ave + Beeler","routeId":"61"},"geometry":{"type":"Point","coordinates":[-79.938933,40.443865]}},
+{"type":"Feature","properties":{"stopId":"7103","name":"Forbes Ave + Beeler","routeId":"61"},"geometry":{"type":"Point","coordinates":[-79.938618,40.443833]}},
+{"type":"Feature","properties":{"stopId":"4409","name":"Forbes Ave + Craig St","routeId":"61"},"geometry":{"type":"Point","coordinates":[-79.948541,40.444525]}},
+{"type":"Feature","properties":{"stopId":"2635","name":"Craig St + Fifth Ave","routeId":"54"},"geometry":{"type":"Point","coordinates":[-79.949188,40.447258]}},
+{"type":"Feature","properties":{"stopId":"2571","name":"Craig St + Park Plaza","routeId":"54"},"geometry":{"type":"Point","coordinates":[-79.949477,40.447868]}}
+]}

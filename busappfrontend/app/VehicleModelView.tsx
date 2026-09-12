@@ -4,7 +4,9 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { BufferGeometry, Group, Material, Mesh, Object3D, PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import type { ViewMode } from "@/lib/app-context";
+import { useCrowding } from "@/lib/crowding/use-crowding";
 import { bellowsFoldPose, revealParts } from "@/lib/vehicle-model";
+import { CrowdingPanel } from "./CrowdingPanel";
 import { ViewToggle } from "./ViewToggle";
 
 const MODEL_URL = "/models/new-flyer-xd60.glb";
@@ -61,6 +63,7 @@ export function VehicleModelView({ viewMode, onSetViewMode }: VehicleModelViewPr
   const [inside, setInside] = useState(false);
   const [bend, setBend] = useState(0);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const crowding = useCrowding();
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -319,31 +322,35 @@ export function VehicleModelView({ viewMode, onSetViewMode }: VehicleModelViewPr
       </div>
       <ViewToggle viewMode={viewMode} onChange={onSetViewMode} />
 
-      <div className="absolute bottom-[9px] left-[11px] right-[11px] flex items-end gap-2">
-        <button type="button" className={CONTROL_CLASS} onClick={() => setPaused((value) => !value)} aria-pressed={paused} disabled={status !== "ready"}>
-          {paused ? "Play" : "Pause"}
-        </button>
-        <button type="button" className={CONTROL_CLASS} onClick={() => setInside((value) => !value)} aria-pressed={inside} disabled={status !== "ready"}>
-          {inside ? "Exterior" : "See inside"}
-        </button>
-        <label className="ml-auto flex min-w-0 flex-1 flex-col text-footnote font-bold uppercase tracking-loud text-blue">
-          <span>Bend {bend > 0 ? `+${bend}` : bend}°</span>
-          <input
-            type="range"
-            min="-30"
-            max="30"
-            value={bend}
-            onChange={(event) => setBend(Number(event.target.value))}
-            disabled={status !== "ready"}
-            aria-label="Bend the articulated bus"
-            className="h-5 w-full cursor-ew-resize accent-blue disabled:opacity-40"
-          />
-        </label>
-      </div>
+      <div className="absolute bottom-[9px] left-[11px] right-[11px] flex flex-col gap-2">
+        <CrowdingPanel state={crowding} />
 
-      <p className="pointer-events-none absolute bottom-[47px] left-[11px] right-[11px] text-center text-footnote text-blue opacity-footnote">
-        {status === "loading" ? "Loading local 3D model…" : status === "error" ? "3D unavailable · showing the supplied render" : "Drag to orbit · illustrative model · not live occupancy"}
-      </p>
+        <p className="pointer-events-none text-center text-footnote text-blue opacity-footnote">
+          {status === "loading" ? "Loading local 3D model…" : status === "error" ? "3D unavailable · showing the supplied render" : "Drag to orbit · illustrative model · not live occupancy"}
+        </p>
+
+        <div className="flex items-end gap-2">
+          <button type="button" className={CONTROL_CLASS} onClick={() => setPaused((value) => !value)} aria-pressed={paused} disabled={status !== "ready"}>
+            {paused ? "Play" : "Pause"}
+          </button>
+          <button type="button" className={CONTROL_CLASS} onClick={() => setInside((value) => !value)} aria-pressed={inside} disabled={status !== "ready"}>
+            {inside ? "Exterior" : "See inside"}
+          </button>
+          <label className="ml-auto flex min-w-0 flex-1 flex-col text-footnote font-bold uppercase tracking-loud text-blue">
+            <span>Bend {bend > 0 ? `+${bend}` : bend}°</span>
+            <input
+              type="range"
+              min="-30"
+              max="30"
+              value={bend}
+              onChange={(event) => setBend(Number(event.target.value))}
+              disabled={status !== "ready"}
+              aria-label="Bend the articulated bus"
+              className="h-5 w-full cursor-ew-resize accent-blue disabled:opacity-40"
+            />
+          </label>
+        </div>
+      </div>
     </div>
   );
 }

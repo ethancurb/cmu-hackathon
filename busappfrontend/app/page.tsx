@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
 import { LocationField } from "@/components/LocationField";
@@ -13,23 +13,20 @@ import { VehicleModelView } from "./VehicleModelView";
 import { PressureModule } from "./PressureModule";
 import { JourneyPanel } from "./JourneyPanel";
 import { ChatSheet } from "./ChatSheet";
+import { TimeSheet } from "./TimeSheet";
 import { DemoBar } from "./DemoBar";
-import { CrowdingPanel } from "./CrowdingPanel";
 import { useAppState, type DemoSelection } from "@/lib/app-context";
 import { useArrivalTimes } from "@/lib/arrivals";
-import { useCrowding } from "@/lib/crowding/use-crowding";
-import { CMU_FALLBACK, useDeviceLocation } from "@/lib/geolocation";
+import { useDeviceLocation } from "@/lib/geolocation";
 import { useNow } from "@/lib/use-now";
 import { usePressure } from "@/lib/pressure/use-pressure";
 import { pickJourney, useJourneys } from "@/lib/journey/use-journeys";
 import { recommendedBus } from "@/lib/journey/recommendation";
-import { distanceKm } from "@/lib/pressure/geo";
 import { SCENARIOS, SCENARIO_DEFINITIONS, stageCount, type Scenario } from "@/lib/pressure/demo";
 import { clock, weekdayShort } from "@/lib/pressure/format";
 import type { AddressResult } from "@/lib/geocode";
 
 const DEFAULT_ORIGIN_LABEL = "Carnegie Mellon (default)";
-const NEARBY_CARDS_KM = 1.5;
 
 /** `/?demo=pirates&stage=2` puts the home screen into a deterministic scenario
  * (see lib/pressure/demo.ts). Read after mount so server and client first
@@ -57,6 +54,7 @@ function writeDemoParam(demo: DemoSelection | null) {
 export default function HomePage() {
   const router = useRouter();
   const mapPanel = useRef<HTMLDivElement>(null);
+  const [timeSheetOpen, setTimeSheetOpen] = useState(false);
   const {
     selectedRouteId,
     setSelectedRouteId,
@@ -83,7 +81,6 @@ export default function HomePage() {
 
   const device = useDeviceLocation();
   const arrivals = useArrivalTimes();
-  const crowding = useCrowding();
   const now = useNow();
 
   useEffect(() => {
@@ -134,7 +131,6 @@ export default function HomePage() {
   const majorEvent = pressure.data?.eventImpacts.find((i) => i.role === "MAJOR")?.event ?? null;
   const eventMarker = majorEvent ? { lat: majorEvent.lat, lng: majorEvent.lng, label: majorEvent.venue } : null;
   const demoRain = demo ? demo.stage >= (scenario?.event ? 2 : 1) : false;
-  const nearCmu = !demo && distanceKm(origin, CMU_FALLBACK) <= NEARBY_CARDS_KM;
 
   function handleSelectDestination(address: AddressResult) {
     setDestination({ label: address.label, lat: address.lat, lng: address.lng });
@@ -191,7 +187,7 @@ export default function HomePage() {
 
       <div className="mt-[14px] flex items-center">
         <div className="min-w-0 flex-1">
-          <TimeRow left={timeLeft} right={timeRight} onClick={() => router.push("/plan")} />
+          <TimeRow left={timeLeft} right={timeRight} onClick={() => setTimeSheetOpen(true)} />
         </div>
       </div>
 
@@ -251,28 +247,23 @@ export default function HomePage() {
           onShowJourney={showRecommendedJourney} />
       </div>
 
-      {nearCmu ? (
-        <div className="mt-2 px-gutter">
-          <CrowdingPanel state={crowding} />
-        </div>
-      ) : null}
-
-      <div className="mt-auto px-gutter pb-4 pt-4">
-        <button
-          type="button"
-          onClick={() => setChatOpen(true)}
-          className="flex h-control w-full items-center justify-between rounded border border-border bg-surface px-4 text-left text-body text-blue outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-        >
-          <span>Ask LoadLine: “CMU to the North Shore by 7”</span>
-          <span className="text-footnote opacity-footnote">chat</span>
-        </button>
-      </div>
-
       <ChatSheet
         open={chatOpen}
         onClose={() => setChatOpen(false)}
         trip={{ originLabel, origin: { label: originLabel, ...origin }, destinationLabel: tripEnd ? destinationLabel : null, destination: tripEnd, departureAt, arriveBy, journeys: journeyList, journey, pressure: pressure.data, demo: !!scenario }}
       />
+
+      {timeSheetOpen ? (
+        <TimeSheet
+          onClose={() => setTimeSheetOpen(false)}
+          departureAt={departureAt}
+          arriveBy={arriveBy}
+          onApply={(at, nextArriveBy) => {
+            applyDepartureAt(at, nextArriveBy);
+            journeys.refresh();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

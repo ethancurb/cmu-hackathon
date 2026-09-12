@@ -14,7 +14,7 @@ const CACHE_KEY = "prt:vehicles";
 const CACHE_MS = 30_000;
 const MAX_AGE_SECONDS = 300; // matches the "fresh" window transit.ts already uses for this feed
 
-export type VehiclePosition = { id: string; routeId: string; lat: number; lng: number; ageSeconds: number };
+export type VehiclePosition = { id: string; routeId: string; lat: number; lng: number; bearing: number | null; ageSeconds: number };
 export type VehiclePositionsResponse = { status: "ok"; generatedAt: string; vehicles: VehiclePosition[] } | { status: "unavailable" };
 
 export async function GET(request: Request) {
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     const nowSeconds = Date.now() / 1000;
     const vehicles = result.value.vehicles
       .filter((v) => v.timestamp !== null && nowSeconds - v.timestamp <= MAX_AGE_SECONDS && v.routeId && (!routeIds || routeIds.has(v.routeId)))
-      .map((v) => ({ id: v.id || `${v.routeId}:${v.lat},${v.lng}`, routeId: v.routeId, lat: v.lat, lng: v.lng, ageSeconds: Math.max(0, Math.round(nowSeconds - v.timestamp!)) }));
+      .map((v) => ({ id: v.id || `${v.routeId}:${v.lat},${v.lng}`, routeId: v.routeId, lat: v.lat, lng: v.lng, bearing: v.bearing, ageSeconds: Math.max(0, Math.round(nowSeconds - v.timestamp!)) }));
 
     const response: VehiclePositionsResponse = { status: "ok", generatedAt: new Date().toISOString(), vehicles };
     return NextResponse.json(response);

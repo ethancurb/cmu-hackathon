@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Chip } from "@/components/Chip";
 import { IconToggle } from "@/components/IconToggle";
 import { CloudIcon, SunIcon, ChatIcon, CrosshairIcon, StatsIcon } from "@/components/icons/filled";
@@ -13,6 +13,7 @@ import { useVehiclePositions } from "@/lib/use-vehicle-positions";
 import { GTFS_ROUTE_ID } from "@/lib/prt-routes";
 import { ViewToggle } from "./ViewToggle";
 import { MapCanvas, type Destination, type EventMarker, type MapCanvasHandle } from "./MapCanvas";
+import { WeatherDetailsModal } from "./WeatherDetailsModal";
 
 const MAP_HEIGHT = 340;
 const INSET = 11; // 8px spec value × 1.354
@@ -80,8 +81,9 @@ export function RouteMap({
   const device = useDeviceLocation();
   const location = origin ?? device;
   const liveWeather = useWeather(location.lat, location.lng);
-  const weather = weatherOverride ? { ...weatherOverride, loading: false, error: false } : liveWeather;
+  const weather = weatherOverride ? { ...weatherOverride, loading: false, error: false, detail: null } : liveWeather;
   const mapRef = useRef<MapCanvasHandle>(null);
+  const [weatherDetailsOpen, setWeatherDetailsOpen] = useState(false);
 
   // Once a real itinerary is selected, live vehicles for its own bus/rail
   // legs are more useful than the three tracked routes (which have already
@@ -115,6 +117,7 @@ export function RouteMap({
             icon={weather.icon === "sun" ? <SunIcon className="h-4 w-4" /> : <CloudIcon className="h-4 w-4" />}
             label={weather.label}
             onDismiss={onDismissWeather}
+            onClick={() => setWeatherDetailsOpen(true)}
           />
         </div>
       ) : null}
@@ -147,6 +150,8 @@ export function RouteMap({
           onClick={() => mapRef.current?.flyTo(location.lat, location.lng)}
         />
       </div>
+
+      <WeatherDetailsModal open={weatherDetailsOpen} onClose={() => setWeatherDetailsOpen(false)} weather={weather} />
     </div>
   );
 }

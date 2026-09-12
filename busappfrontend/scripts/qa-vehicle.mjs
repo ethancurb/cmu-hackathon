@@ -1,5 +1,6 @@
 // Interactive XD60 QA against a production server on :3100.
-// Verifies local model load, controls, responsive fit and clean view switching.
+// Verifies local model load, controls, responsive fit, clean view switching,
+// and that the 71B capacity bar only renders in vehicle mode.
 import { chromium } from "playwright";
 
 const base = process.env.QA_BASE ?? "http://localhost:3100";
@@ -45,17 +46,19 @@ try {
     }
 
     await page.screenshot({ path: `../qa/${viewport.width}-vehicle-cutaway.png`, fullPage: true });
-    const crowdingPanel = await page.getByText("passenger load").count();
-    if (!crowdingPanel) problems.push(`${viewport.width}px: expected the near-CMU crowding panel below vehicle mode, found none`);
+    const crowdingBar = await page.getByText("71B capacity").count();
+    if (!crowdingBar) problems.push(`${viewport.width}px: expected the 71B capacity bar inside vehicle mode, found none`);
     await page.getByRole("button", { name: "Route list" }).click();
     const routeRows = await page.getByRole("radio").count();
     if (!routeRows) problems.push(`${viewport.width}px: List view did not show the route-selection list`);
+    if (await page.getByText("71B capacity").count()) problems.push(`${viewport.width}px: crowding bar leaked into list mode`);
     await page.getByRole("button", { name: "Map view" }).click();
+    if (await page.getByText("71B capacity").count()) problems.push(`${viewport.width}px: crowding bar leaked into map mode`);
     await page.getByRole("button", { name: "Vehicle model" }).click();
     await page.getByText("Drag to orbit · illustrative model · not live occupancy").waitFor({ timeout: 20_000 });
 
     if (errors.length) problems.push(`${viewport.width}px console: ${errors.join(" | ")}`);
-    console.log(`${viewport.width}px: model loaded, controls exercised, Map/List/Vehicle switched, crowding panel visible, overflow ${layout?.docOverflow}`);
+    console.log(`${viewport.width}px: model loaded, controls exercised, Map/List/Vehicle switched, capacity bar scoped to vehicle mode, overflow ${layout?.docOverflow}`);
     await context.close();
   }
 } finally {

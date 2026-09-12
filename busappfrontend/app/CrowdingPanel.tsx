@@ -1,64 +1,56 @@
 import type { CrowdingState } from "@/lib/crowding/use-crowding";
 import type { PassengerLoad } from "@/lib/crowding/types";
 
+const LEVELS: PassengerLoad[] = ["not_crowded", "somewhat_crowded", "crowded"];
+
 const LOAD_LABEL: Record<PassengerLoad, string> = {
   not_crowded: "Not crowded",
   somewhat_crowded: "Somewhat crowded",
   crowded: "Crowded",
 };
 
-const CLOCK = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
-const DATE = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
+const LOAD_COLOR: Record<PassengerLoad, string> = {
+  not_crowded: "var(--pressure-low)",
+  somewhat_crowded: "var(--pressure-moderate)",
+  crowded: "var(--pressure-surge)",
+};
 
+/**
+ * Verified PRT passenger-load category for 71B, shown as a filled bar with a
+ * dot per level rather than a percentage — the feed reports one of three
+ * categories, never a count or occupancy fraction (lib/crowding/types).
+ */
 export function CrowdingPanel({ state }: { state: CrowdingState }) {
   const nearest = state.current?.observations[0] ?? null;
-  const latestHistory = state.history.slice(-3).reverse();
-  const sourceBadge = state.current === null ? "Checking" : state.current.status === "unavailable" ? "Unavailable" : "Live PRT";
-  const checkedAt = state.current?.fetchedAt ? CLOCK.format(new Date(state.current.fetchedAt)) : null;
-  const currentLabel =
-    state.current === null
-      ? "Checking PRT…"
-      : state.current.status === "unavailable"
-        ? "Feed unavailable"
-        : nearest?.passengerLoad
-          ? LOAD_LABEL[nearest.passengerLoad]
-          : "Not reported";
+  const level = nearest?.passengerLoad ?? null;
+  const index = level ? LEVELS.indexOf(level) : -1;
+  const color = level ? LOAD_COLOR[level] : "var(--border-soft)";
+  const label =
+    state.current === null ? "Checking…" : state.current.status === "unavailable" ? "Unavailable" : level ? LOAD_LABEL[level] : "Not reported";
 
   return (
-    <section className="rounded border border-border-soft bg-surface p-3" aria-labelledby="crowding-title">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p id="crowding-title" className="text-label text-blue">71B passenger load</p>
-          <p className="mt-1 text-row-title font-bold text-ink-deep">{currentLabel}</p>
-        </div>
-        <span className="whitespace-nowrap text-footnote uppercase tracking-loud text-blue">{sourceBadge}</span>
+    <div className="rounded border border-border-soft bg-surface px-3 py-2" aria-label={`71B passenger load: ${label}`}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-footnote uppercase tracking-loud text-blue">71B capacity</span>
+        <span className="text-footnote font-bold" style={{ color }}>
+          {label}
+        </span>
       </div>
-
-      <p className="mt-1 text-descriptor text-blue">
-        {nearest ? `Vehicle ${nearest.vehicleId} · ${nearest.etaLabel} to ${nearest.stopName}` : state.current?.message ?? "Loading the current category."}
-      </p>
-      <p className="mt-1 text-footnote text-blue opacity-footnote">
-        {checkedAt ? `Checked ${checkedAt} · ` : ""}Current category only — not a passenger count. PRT does not timestamp the load measurement.
-      </p>
-
-      <div className="mt-3 border-t border-border-soft pt-2">
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="text-label text-blue">14-day rolling history</p>
-          <span className="text-footnote text-blue opacity-footnote">{state.history.length} checks</span>
-        </div>
-        {latestHistory.length ? (
-          <ul className="mt-1 space-y-1">
-            {latestHistory.map((sample) => (
-              <li key={`${sample.vehicleId}-${sample.fetchedAt}`} className="flex justify-between gap-2 text-footnote text-blue">
-                <span>Vehicle {sample.vehicleId} · {LOAD_LABEL[sample.passengerLoad]}</span>
-                <time dateTime={sample.fetchedAt} className="whitespace-nowrap opacity-footnote">{DATE.format(new Date(sample.fetchedAt))}, {CLOCK.format(new Date(sample.fetchedAt))}</time>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-1 text-footnote text-blue opacity-footnote">Collection starts when PRT reports a category. Stored on this device while the app is in use.</p>
-        )}
+      <div className="relative mt-[7px] h-[3px] rounded-full bg-border-soft">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-300"
+          style={{ width: index >= 0 ? `${((index + 1) / LEVELS.length) * 100}%` : "0%", backgroundColor: color }}
+        />
+        {LEVELS.map((_, i) => (
+          <span
+            key={i}
+            aria-hidden
+            className="absolute top-1/2 h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-canvas"
+            style={{ left: `${((i + 1) / LEVELS.length) * 100}%`, backgroundColor: i <= index ? color : "var(--border-soft)" }}
+          />
+        ))}
       </div>
-    </section>
+      <p className="mt-1 text-footnote text-blue opacity-footnote">Category only, not a passenger count.</p>
+    </div>
   );
 }
