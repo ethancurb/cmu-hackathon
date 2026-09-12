@@ -101,7 +101,7 @@ export default function HomePage() {
 
   return (
     <div className="mobile-screen home-screen flex min-h-dvh flex-col bg-canvas">
-      <NavBar menuDisabled />
+      <NavBar />
 
       {demo ? (
         <div className="mt-2">
@@ -130,6 +130,7 @@ export default function HomePage() {
             origin={scenario ? origin : null}
             weatherOverride={scenario ? { label: demoRain ? "Rain beginning" : "Clear", icon: demoRain ? "cloud" : "sun" } : null}
             eventMarker={eventMarker}
+            onOpenTimeline={() => router.push("/plan")}
             weatherDismissed={weatherDismissed}
             onDismissWeather={dismissWeather}
             viewMode={viewMode}

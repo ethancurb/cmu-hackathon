@@ -110,6 +110,9 @@ None. Optional `TICKETMASTER_API_KEY`, `DATA_MODE=DEMO`.
 - `npm run typecheck`, `npm run lint`, `npm run build`: clean.
 - Runtime: `node scripts/qa-screens.mjs` at 320/390/768/1280 → no horizontal overflow, no console errors, no occupancy wording; `node scripts/qa-flow.mjs` → home → plan → pick bar → apply → home shows "at <time>", demo stage 0→3 raises 31→91, exit demo, Tomorrow/8-hour plan loads 33 bars.
 - Live API at CMU (Sat morning): all sports feeds, weather and PRT realtime LIVE; a real PRT "Temp. Stop Move" alert appeared as a small TRANSIT reason.
+- `node scripts/qa-fail.mjs`: with `/api/pressure` returning 503 the home module shows "Pressure model unavailable" and no score; with the request aborted the plan screen shows the unavailable state and the apply button stays disabled.
+- `node scripts/qa-menu.mjs`: hamburger menu reaches `/demo`; the map's stats button reaches `/plan`.
+- Live check for a Steelers Sunday (CMU → Acrisure corridor, tomorrow 11 AM, 8 h): the real ESPN game contributes up to +40, pre-game bars reach 60 and the post-game exit wave 67 with the event impact window 12:00–5:30 PM; confidence LOW because the horizon exceeds 24 h.
 
 # KNOWN LIMITATIONS
 

@@ -33,6 +33,8 @@ type RouteMapProps = {
   weatherOverride?: { label: string; icon: "sun" | "cloud" } | null;
   /** Venue of the event currently driving pressure, if any. */
   eventMarker?: EventMarker;
+  /** Opens the pressure timeline (the map's stats button). */
+  onOpenTimeline?: () => void;
   weatherDismissed: boolean;
   onDismissWeather: () => void;
   viewMode: ViewMode;
@@ -46,6 +48,7 @@ export function RouteMap({
   origin = null,
   weatherOverride = null,
   eventMarker = null,
+  onOpenTimeline,
   weatherDismissed,
   onDismissWeather,
   viewMode,
@@ -124,11 +127,11 @@ export function RouteMap({
       <ViewToggle viewMode={viewMode} onChange={onSetViewMode} />
 
       {/* Utility buttons: chat + stats grouped bottom-left, locate alone
-          bottom-right. Chat/stats have no destination in this build yet, so
-          they're visibly disabled rather than dead; locate genuinely recenters. */}
+          bottom-right. Stats opens the pressure timeline; chat has no
+          conversational backend, so it stays visibly disabled rather than dead. */}
       <div className="absolute flex" style={{ left: INSET, bottom: INSET, gap: 3 }}>
-        <IconToggle icon={<ChatIcon className="h-[22px] w-[22px]" />} label="Feedback (not available yet)" showIndicator={false} disabled />
-        <IconToggle icon={<StatsIcon className="h-[22px] w-[22px]" />} label="Crowding stats (not available yet)" showIndicator={false} disabled />
+        <IconToggle icon={<ChatIcon className="h-[22px] w-[22px]" />} label="Ask LoadLine (not available yet)" showIndicator={false} disabled />
+        <IconToggle icon={<StatsIcon className="h-[22px] w-[22px]" />} label="Pressure timeline" showIndicator={false} onClick={onOpenTimeline} />
       </div>
       <div className="absolute" style={{ right: INSET, bottom: INSET }}>
         <IconToggle

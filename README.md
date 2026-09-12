@@ -19,7 +19,7 @@ npm start -- --port 3100      # production, http://localhost:3100
 # or: npm run dev              # development server
 ```
 
-Checks: `npm test` (model + adapter tests), `npm run typecheck`, `npm run lint`, `npm run build`. Runtime QA against a running server: `node scripts/qa-screens.mjs` and `node scripts/qa-flow.mjs` (Playwright).
+Checks: `npm test` (model + adapter tests), `npm run typecheck`, `npm run lint`, `npm run build`. Runtime QA against a running server (Playwright): `node scripts/qa-screens.mjs`, `node scripts/qa-flow.mjs`, `node scripts/qa-fail.mjs`, `node scripts/qa-menu.mjs`.
 
 No API keys are required. Everything live is key-free: MLB Stats API, NHL API, ESPN NFL schedule, Open-Meteo, PRT GTFS-RT and GTFS static, Photon geocoding, Esri raster tiles.
 
