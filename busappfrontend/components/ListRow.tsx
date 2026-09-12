@@ -24,11 +24,11 @@ export function ListRow({ title, subtitle, checked = false, onToggle, onClick, r
       <button
         type="button"
         onClick={onClick}
-        className="flex flex-1 items-center justify-between gap-[11px] text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
+        className="flex min-w-0 flex-1 items-center justify-between gap-[11px] text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
       >
-        <span className="flex flex-col">
-          <span className="text-row-title font-bold text-blue">{title}</span>
-          <span className="text-body text-blue">{subtitle}</span>
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate text-row-title font-bold text-blue">{title}</span>
+          <span className="truncate text-body text-blue">{subtitle}</span>
         </span>
         <ChevronRightIcon className="h-4 w-[11px] shrink-0 text-blue" />
       </button>

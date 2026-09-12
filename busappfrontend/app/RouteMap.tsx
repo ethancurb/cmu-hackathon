@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Chip } from "@/components/Chip";
 import { IconToggle } from "@/components/IconToggle";
-import { CloudIcon, SunIcon, ChatIcon, CrosshairIcon, StatsIcon, PinIcon } from "@/components/icons/filled";
+import { CloudIcon, SunIcon, ChatIcon, CrosshairIcon, StatsIcon } from "@/components/icons/filled";
 import type { RouteId } from "@/lib/mock-data";
 import type { ViewMode } from "@/lib/app-context";
 import { useDeviceLocation } from "@/lib/geolocation";
@@ -27,6 +27,10 @@ type RouteMapProps = {
   activeRouteId: RouteId;
   onSelectRoute: (id: RouteId) => void;
   destination: Destination;
+  /** Scenario origin; when null the rider's device location (or CMU fallback) is used. */
+  origin?: Destination;
+  /** Scenario weather chip; when null the live Open-Meteo reading is shown. */
+  weatherOverride?: { label: string; icon: "sun" | "cloud" } | null;
   weatherDismissed: boolean;
   onDismissWeather: () => void;
   viewMode: ViewMode;
@@ -37,13 +41,17 @@ export function RouteMap({
   activeRouteId,
   onSelectRoute,
   destination,
+  origin = null,
+  weatherOverride = null,
   weatherDismissed,
   onDismissWeather,
   viewMode,
   onSetViewMode,
 }: RouteMapProps) {
-  const location = useDeviceLocation();
-  const weather = useWeather(location.lat, location.lng);
+  const device = useDeviceLocation();
+  const location = origin ?? device;
+  const liveWeather = useWeather(location.lat, location.lng);
+  const weather = weatherOverride ? { ...weatherOverride, loading: false, error: false } : liveWeather;
   const mapRef = useRef<MapCanvasHandle>(null);
   // Selecting a different arrival card "recenters" the map on that route (a
   // real, if illustrative, effect). Locate resets the view back to the
@@ -83,28 +91,19 @@ export function RouteMap({
           onNearestRoute={onSelectRoute}
         />
 
-        {/* Destination: the shared PinIcon glyph, not a plain SVG circle.
-            Fixed/decorative default until a real address is searched — once
-            `destination` is set, MapCanvas draws the real geocoded pin
-            instead, so this placeholder steps aside rather than doubling up. */}
-        {!destination ? (
-          <>
-            <PinIcon className="absolute h-4 w-4 -translate-x-1/2 -translate-y-full" style={{ left: 296, top: 150 }} />
-            <span className="absolute text-label text-blue" style={{ left: 260, top: 168 }}>
-              Morewood Avenue
-            </span>
-          </>
-        ) : null}
-
         {/* Map annotations: neighborhood labels, as shown directly on the
             reference map. Sized with the generic (unsolved, provisional)
             label token — no target string was measured for these. */}
-        <span className="absolute text-label text-blue" style={{ left: INSET, bottom: 60 }}>
-          Oakland
-        </span>
-        <span className="absolute text-label text-blue" style={{ right: INSET, bottom: 60 }}>
-          Campus
-        </span>
+        {!destination && !origin ? (
+          <>
+            <span className="absolute text-label text-blue" style={{ left: INSET, bottom: 60 }}>
+              Oakland
+            </span>
+            <span className="absolute text-label text-blue" style={{ right: INSET, bottom: 60 }}>
+              Campus
+            </span>
+          </>
+        ) : null}
       </div>
 
       {/* Floating UI stays fixed to the panel's corners — it doesn't pan with the map content. */}

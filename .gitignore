@@ -13,3 +13,6 @@ coverage/
 .worktrees/
 .local/
 .claude/settings.local.json
+
+# runtime QA screenshots
+qa/

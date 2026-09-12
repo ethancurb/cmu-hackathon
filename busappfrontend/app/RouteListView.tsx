@@ -26,11 +26,12 @@ export function RouteListView({ selectedRouteId, onSelectRoute, viewMode, onSetV
         {ROUTES.map((route) => {
           const live = arrivals?.[route.id];
           const timeLabel = live?.status === "live" ? formatClockTime(live.epochSeconds) : arrivals === null ? "…" : "—";
+          const subtitle = live?.status === "live" ? `${live.minutesFromNow} min · ${live.stopName}` : arrivals === null ? "Loading live prediction" : "No live trip in progress";
           return (
             <ListRow
               key={route.id}
               title={`${route.id} · ${timeLabel}`}
-              subtitle={route.seats}
+              subtitle={subtitle}
               checked={route.id === selectedRouteId}
               onToggle={() => onSelectRoute(route.id)}
               onClick={() => onSelectRoute(route.id)}
