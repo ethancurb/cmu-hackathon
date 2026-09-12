@@ -58,9 +58,22 @@ export function LocationField({ value, onChange, onSelectAddress, near }: Locati
 
   const showDropdown = editing && draft.trim().length >= 3;
 
+  function startEditing() {
+    if (editing) return;
+    // Clearing the draft here (rather than leaving the old label selected)
+    // means the rider can start typing immediately instead of deleting the
+    // previous value first.
+    setDraft("");
+    setHighlighted(0);
+    setEditing(true);
+  }
+
   return (
     <div className="relative">
-      <div className="flex h-control items-center gap-[11px] rounded border border-border bg-surface px-4">
+      <div
+        onClick={startEditing}
+        className="flex h-control items-center gap-[11px] rounded border border-border bg-surface px-4"
+      >
         <PinIcon className="h-[22px] w-[22px] shrink-0" />
         {editing ? (
           <input
@@ -99,13 +112,9 @@ export function LocationField({ value, onChange, onSelectAddress, near }: Locati
         )}
         <button
           type="button"
-          onClick={() => {
-            // Clearing the draft here (rather than leaving the old label
-            // selected) means the rider can start typing immediately instead
-            // of deleting the previous value first.
-            setDraft("");
-            setHighlighted(0);
-            setEditing(true);
+          onClick={(e) => {
+            e.stopPropagation();
+            startEditing();
           }}
           aria-label="Edit location"
           className={`shrink-0 text-blue ${FOCUS_RING}`}
