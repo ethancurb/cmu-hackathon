@@ -109,6 +109,9 @@ export function ticketmasterCategory(segment: string, name: string): EventCatego
 
 const LARGE_VENUE = /PPG Paints|Acrisure|PNC Park|Petersen Events|Stage AE|Convention Center|Benedum|Heinz Hall/i;
 
+/** Listings that are not crowd-drawing events: venue tours, hotel/parking add-ons, VIP upgrades. */
+export const NOT_AN_EVENT = /\b(arena|stadium|ballpark|venue|park) tours?\b|hotel packages?|ticket \+ hotel|parking (pass|only)|vip (upgrade|package)|meet (and|&) greet/i;
+
 export function parseTicketmaster(data: unknown) {
   if (!r(data).page && !r(data)._embedded) throw new Error("Invalid Ticketmaster response");
   return list(r(r(data)._embedded).events).flatMap((g) => {
@@ -117,7 +120,7 @@ export function parseTicketmaster(data: unknown) {
     if (status !== "onsale" && status !== "offsale") return [];
     const segment = str(r(r(list(item.classifications)[0]).segment).name);
     const category = ticketmasterCategory(segment, str(item.name));
-    if (!category) return [];
+    if (!category || NOT_AN_EVENT.test(str(item.name))) return [];
     const location = r(venue.location);
     const lat = Number(str(location.latitude)), lng = Number(str(location.longitude));
     const point = Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : venuePoint(str(venue.name));
