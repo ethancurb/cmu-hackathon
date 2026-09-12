@@ -2,4 +2,4 @@
 
 Follow [the ledger rules](../AGENTS.md#personal-ledgers--update-with-the-work-you-push). Append only Nate's work; current task status belongs in GitHub Issues.
 
-No entries recorded yet.
+2026-09-12T08:10:41Z → issue #15 → added real weather (Open-Meteo, key-free) and a real map basemap (MapLibre GL + Esri World Light Gray Base raster tiles, key-free) to the home map module, replacing the hardcoded "Ends in 18m" chip and the hand-drawn SVG grid; centered on browser geolocation with a CMU/Oakland fallback; recorded the rendering choice in docs/ARCHITECTURE.md (issue #8's open question) → verified: `npm run build` and `npm run lint` clean; Playwright screenshots against the dev server (geolocation granted and denied) show real CMU-area streets and a live weather reading, no console/page errors → risk: not yet tested on a real device/browser outside this sandbox; MapLibre's vector-tile pipeline failed silently in this sandbox specifically, so raster was chosen over vector — worth rechecking on the actual demo machine if per-layer recoloring is wanted later.

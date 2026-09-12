@@ -30,6 +30,16 @@ export function CloudIcon({ className, style }: IconProps) {
   );
 }
 
+/** Weather chip: clear-sky state (paired with CloudIcon for overcast/precipitation). */
+export function SunIcon({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" className={cn(filledBase, className)} style={style} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="8" cy="8" r="3.2" />
+      <path d="M7.25 0h1.5v2.4h-1.5V0zm0 13.6h1.5V16h-1.5v-2.4zM0 7.25h2.4v1.5H0v-1.5zm13.6 0H16v1.5h-2.4v-1.5zM2.34 3.34l1.06-1.06 1.7 1.7-1.06 1.06-1.7-1.7zm8.56 8.56 1.06-1.06 1.7 1.7-1.06 1.06-1.7-1.7zM11.9 2.28l1.06 1.06-1.7 1.7-1.06-1.06 1.7-1.7zM3.34 13.66l1.06 1.06 1.7-1.7-1.06-1.06-1.7 1.7z" />
+    </svg>
+  );
+}
+
 export function BusIcon({ className, style }: IconProps) {
   return (
     <svg viewBox="0 0 16 16" className={cn(filledBase, className)} style={style} fill="currentColor" xmlns="http://www.w3.org/2000/svg">

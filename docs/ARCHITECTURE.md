@@ -35,6 +35,14 @@ Spend the first 20–30 minutes obtaining sanitized authenticated samples for se
 
 Decision: usable counts plus compatible capacity allow a numeric visual; usable categories allow a categorical visual; unavailable or stale data yields an explicit unknown/stale state. If access is blocked, use labeled fixtures to build the card/contract while keeping the unresolved live-data dependency visible. Do not quietly substitute participating-phone counts. Rider observations are a possible explicitly chosen fallback, not an automatic expansion into a reporting platform.
 
+## Map rendering vs. journey routing
+
+`app/RouteMap.tsx`'s basemap (previously a hand-drawn SVG placeholder, flagged in issue #8 as needing a decision) now renders a real, key-free MapLibre GL canvas (`app/MapCanvas.tsx`) centered on the rider's actual browser-geolocated coordinate, falling back to a fixed CMU/Oakland coordinate (`lib/geolocation.ts`) when location is denied or unavailable. It uses Esri's "World Light Gray Base" raster tiles (OpenStreetMap-derived, no API key/billing signup), recolored via `raster-contrast`. Vector tiles (OpenFreeMap, which would allow full per-layer palette recoloring) were tried first but their worker-based tile pipeline didn't come up reliably in this environment; a raster basemap has no such dependency and is the safer choice for a live demo regardless.
+
+This basemap is a static, non-interactive backdrop only — it does not replace Google's routing role described below. The existing decorative route/badge overlay stays pixel-anchored (illustrative, as before), not geo-anchored, so it is not tied to the map's real coordinates; do not read positions on it as real bus geometry.
+
+The weather chip (same file) now calls Open-Meteo (`lib/weather.ts`, also key-free) for the resolved coordinate instead of showing a fixed "Ends in 18m" string, showing an explicit "Weather unavailable" state on fetch failure rather than a stale/fabricated reading.
+
 ## Join Google to the correct bus
 
 Google can supply walking/transit legs, stops, departure times, line names, and headsigns. Its documented `TransitVehicle` describes vehicle type/name; do not treat that object or a label like 71D as a PRT fleet ID. [Google transit routes](https://developers.google.com/maps/documentation/routes/transit-route), [TransitVehicle reference](https://developers.google.com/maps/documentation/javascript/reference/route#TransitVehicle).

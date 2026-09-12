@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Chip } from "@/components/Chip";
 import { IconToggle } from "@/components/IconToggle";
 import { Badge } from "@/components/Badge";
-import { CloudIcon, BusIcon, ChatIcon, CrosshairIcon, StatsIcon, PinIcon } from "@/components/icons/filled";
+import { CloudIcon, SunIcon, BusIcon, ChatIcon, CrosshairIcon, StatsIcon, PinIcon } from "@/components/icons/filled";
 import type { RouteId } from "@/lib/mock-data";
 import type { ViewMode } from "@/lib/app-context";
+import { useDeviceLocation } from "@/lib/geolocation";
+import { useWeather } from "@/lib/weather";
 import { ViewToggle } from "./ViewToggle";
+import { MapCanvas, type MapCanvasHandle } from "./MapCanvas";
 
 const MAP_WIDTH = 336;
 const MAP_HEIGHT = 340;
@@ -30,19 +33,10 @@ type RouteMapProps = {
   onSetViewMode: (mode: ViewMode) => void;
 };
 
-/** Light street-grid texture — a static placeholder, not a map SDK. */
-function StreetTexture() {
-  const lines = [];
-  for (let x = 24; x < MAP_WIDTH; x += 32) lines.push(<line key={`v${x}`} x1={x} y1={0} x2={x} y2={MAP_HEIGHT} />);
-  for (let y = 24; y < MAP_HEIGHT; y += 32) lines.push(<line key={`h${y}`} x1={0} y1={y} x2={MAP_WIDTH} y2={y} />);
-  return (
-    <g stroke="var(--border-soft)" strokeWidth={1} opacity={0.6}>
-      {lines}
-    </g>
-  );
-}
-
 export function RouteMap({ activeRouteId, weatherDismissed, onDismissWeather, viewMode, onSetViewMode }: RouteMapProps) {
+  const location = useDeviceLocation();
+  const weather = useWeather(location.lat, location.lng);
+  const mapRef = useRef<MapCanvasHandle>(null);
   // Selecting a different arrival card "recenters" the map on that route (a
   // real, if illustrative, effect). Locate resets the view back to the
   // rider's own location (the origin ring), independent of route selection.
@@ -69,12 +63,18 @@ export function RouteMap({ activeRouteId, weatherDismissed, onDismissWeather, vi
           clipped by overflow-hidden rather than escaping the container, so
           narrow viewports crop the map's decoration rather than the page. */}
       <div
-        className="motion-reduce:transition-none motion-reduce:duration-0"
+        className="absolute inset-0 motion-reduce:transition-none motion-reduce:duration-0"
         style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, transition: "transform 200ms ease-out" }}
       >
-        <svg width="100%" height={MAP_HEIGHT} viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} preserveAspectRatio="xMidYMid slice">
-          <StreetTexture />
+        <MapCanvas ref={mapRef} lat={location.lat} lng={location.lng} />
 
+        <svg
+          className="absolute inset-0"
+          width="100%"
+          height={MAP_HEIGHT}
+          viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
+          preserveAspectRatio="xMidYMid slice"
+        >
           {/* Route 54 — inactive: dotted light gray. Lowest/looping path. */}
           <path
             d="M40,190 C90,250 200,260 296,150"
@@ -168,9 +168,13 @@ export function RouteMap({ activeRouteId, weatherDismissed, onDismissWeather, vi
       </div>
 
       {/* Floating UI stays fixed to the panel's corners — it doesn't pan with the map content. */}
-      {!weatherDismissed ? (
+      {!weatherDismissed && !weather.loading ? (
         <div className="absolute" style={{ left: INSET, top: INSET }}>
-          <Chip icon={<CloudIcon className="h-4 w-4" />} label="Ends in 18m" onDismiss={onDismissWeather} />
+          <Chip
+            icon={weather.icon === "sun" ? <SunIcon className="h-4 w-4" /> : <CloudIcon className="h-4 w-4" />}
+            label={weather.label}
+            onDismiss={onDismissWeather}
+          />
         </div>
       ) : null}
 
@@ -188,7 +192,10 @@ export function RouteMap({ activeRouteId, weatherDismissed, onDismissWeather, vi
           icon={<CrosshairIcon className="h-[22px] w-[22px]" />}
           label="Locate me"
           showIndicator={false}
-          onClick={() => setLocatedAtOrigin(true)}
+          onClick={() => {
+            setLocatedAtOrigin(true);
+            mapRef.current?.flyTo(location.lat, location.lng);
+          }}
         />
       </div>
     </div>
