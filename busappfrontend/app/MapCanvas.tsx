@@ -7,6 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Badge } from "@/components/Badge";
 import { BusIcon, PinIcon } from "@/components/icons/filled";
 import type { RouteId } from "@/lib/mock-data";
+import { GTFS_ROUTE_ID } from "@/lib/prt-routes";
 
 export type MapCanvasHandle = {
   flyTo: (lat: number, lng: number) => void;
@@ -74,16 +75,6 @@ type RouteFeature = {
   geometry: { coordinates: [number, number][] };
 };
 
-// The app's mock route IDs (71/61/54) map onto PRT's real GTFS route_ids.
-// Neither "71" nor "61" exists as a bare route in PRT's current system —
-// only lettered branches do (71A-D, 61A-D). Checked each branch's distance
-// from CMU (40.4443, -79.9428) against the June 2026 GTFS feed: bare "71"
-// passes ~4.1km away (Edgewood/Wilkinsburg, nowhere near Oakland) so it was
-// swapped for 71D, which comes within ~340m; all four 61-branches pass
-// within ~35m of campus (shared Forbes Ave trunk) so 61A was kept. "54"
-// (North Side–Oakland–South Side) is a real bare route and comes within
-// ~600m, so it's used as-is. Flag if the team meant a different branch.
-const GTFS_ROUTE_ID: Record<RouteId, string> = { "71": "71D", "61": "61A", "54": "54" };
 const APP_ROUTE_IDS = Object.keys(GTFS_ROUTE_ID) as RouteId[];
 
 const INACTIVE_BADGE_CLASS: Record<RouteId, string> = {
