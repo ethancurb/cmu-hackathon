@@ -1,0 +1,1 @@
+Read and follow [the repository's canonical agent instructions](../AGENTS.md) before working. Complete its onboarding, coordinate current tasks in GitHub Issues, and include your human's ledger entry with the work you push. Reread changed instructions after pulling.

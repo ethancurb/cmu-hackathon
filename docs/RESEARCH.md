@@ -90,7 +90,7 @@ For initial selection or a proposed pivot, record the agreed decision in `PROJEC
 3. **Check feasibility and rules.** Confirm required input data, credentials, devices, deployment capability, and permitted starting material. Label uncertainties. A core dependency with no credible proof path requires a smaller promise or replacement; an optional uncertainty can be cut.
 4. **Test the hardest assumption.** Timebox a real-input experiment, usually 30–45 minutes. Define success before starting: the required result, acceptable latency, valid output, and relevant failure behavior. Keep the experiment's evidence, including failures.
 5. **Inspect the complete experience.** Sketch the three-minute proof and component boundary. Resolve missing interfaces and ticket dependencies before parallel implementation diverges.
-6. **Choose and cut.** Compare the candidates using the table below. Record the chosen win thesis, at most three must-have outcomes, explicit cuts, and the next proof checkpoint in `PROJECT`. Task selection belongs in the separate ticket system.
+6. **Choose and cut.** Compare the candidates using the table below. Record the chosen win thesis, at most three must-have outcomes, explicit cuts, and the next proof checkpoint in `PROJECT`. Task selection belongs in GitHub Issues.
 
 | Question | Record for each candidate |
 | --- | --- |
@@ -120,9 +120,9 @@ The schedule below is an internal default, not an organizer mandate. Plan from *
 
 Do not treat a green unit check as proof of these milestones. Test the actual user flow, the real provider path if the claim depends on it, and the presentation machine. A late fix warrants another relevant rehearsal; changing code after submission depends on the event's actual policy.
 
-## Execution with the ticket system
+## Execution with GitHub Issues and personal ledgers
 
-People select their own work through the separate ticket system being built by a teammate. Its actual link/API must be supplied before agents can use it directly. Keep task selection, progress, blockers, and completion evidence there. This repo defines product strategy and shared interfaces; it does not prescribe permanent roles or reserve file areas for particular people. While the system is unavailable, use the current human task brief and coordinate conflicting work directly.
+People choose their own work in [GitHub Issues](https://github.com/ethancurb/cmu-hackathon/issues). Publish intended scope and chosen ownership before editing; keep current progress, blockers, and completion there. The four [personal ledgers](../ledgers/) record brief verified history with the work each person pushes. They do not reserve files or duplicate live task status. [AGENTS](../AGENTS.md) defines the canonical workflow, including access failures and onboarding. No permanent roles or people-to-component assignments are prescribed.
 
 The boundary must become concrete before parallel producer/consumer work: canonical types/schema, one request/response example, errors, relevant side effects, and a shared fixture. Put executable definitions in code and link them from `ARCHITECTURE`. Do not maintain duplicate contracts in four chats. A field invented by one agent creates integration debt even if its local UI looks convincing.
 
@@ -134,7 +134,7 @@ When a dependency blocks a task for ten minutes or two failed approaches, report
 
 Plan coverage through the overnight stretch: stagger breaks and leave reproducible progress in the ticket before stepping away. Keep final build and demo recovery steps usable by the team. These are operational precautions for this team's time constraint, not a claim that working all night improves performance.
 
-Keep context small: `AGENTS` for behavior, `STRATEGY` for shared judgment, `PROJECT` for product decisions, `ARCHITECTURE` for interfaces and execution facts, and `DEMO` for delivery. Main does not need protection and PRs are optional. Do not add a parallel task ledger, per-person status files, coordination service, or process-only CI. Unpublished files are not automatically visible to teammates; use the actual ticket system for shared task state.
+Keep context small: `AGENTS` for behavior, `STRATEGY` for shared judgment, `PROJECT` for product decisions, `ARCHITECTURE` for interfaces and execution facts, and `DEMO` for delivery. GitHub Issues holds current task state; personal ledgers hold published history. Main does not need protection and PRs are optional. Keep this to existing GitHub capabilities and four short ledgers, without another task database, coordination service, or process-only CI. Unpublished files are not automatically visible to teammates.
 
 ## Demo and submission
 

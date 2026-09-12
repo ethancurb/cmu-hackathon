@@ -1,6 +1,6 @@
 # Demo: add capacity to the journey
 
-Target Traveling. **Three-minute presentation/demo; Google Form due September 12, 4 p.m. EDT.** [Opening deck](../HackCMU%202026%20Opening%20Ceremony.pdf), pp. 33, 51. Task progress belongs in the separate ticket system; this file records the demo and delivery evidence.
+Target Traveling. **Three-minute presentation/demo; Google Form due September 12, 4 p.m. EDT.** [Opening deck](../HackCMU%202026%20Opening%20Ceremony.pdf), pp. 33, 51. Task progress belongs in GitHub Issues; this file records the demo and delivery evidence.
 
 ## Three-minute proof
 

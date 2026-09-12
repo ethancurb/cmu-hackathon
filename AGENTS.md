@@ -4,8 +4,8 @@ Help four humans win a HackCMU track with a distinctive, working project. Strate
 
 ## Required onboarding
 
-1. Read [STRATEGY](docs/STRATEGY.md), [PROJECT](docs/PROJECT.md), and [ARCHITECTURE](docs/ARCHITECTURE.md) once per session or after losing context. Read the current ticket/task brief. Load detailed research only when relevant.
-2. Check `git status --short --branch` and the latest published revision when available. Inspect before integrating; never overwrite another writer's work.
+1. Check `git status --short --branch` and fetch the latest published revision when available. Inspect before integrating; never overwrite another writer's work. After a pull, merge, or branch switch, reread any changed agent instructions before editing.
+2. Read [STRATEGY](docs/STRATEGY.md), [PROJECT](docs/PROJECT.md), and [ARCHITECTURE](docs/ARCHITECTURE.md) once per session or after losing context. Read open GitHub Issues, your current issue, your human's ledger, and recent entries relevant to your dependencies in the other [ledgers](ledgers/). Load detailed research only when relevant.
 3. State in at most five lines: track/win thesis; task and changed paths; contract/dependencies; verification; next action. Identify unknowns and proceed with authorized work.
 
 ## Product boundary
@@ -18,14 +18,22 @@ Help four humans win a HackCMU track with a distinctive, working project. Strate
 
 ## Tasks and collaboration
 
-- People choose work through the team's separate ticket system, which is being built by a teammate. This repo defines no standing roles, people-to-path assignments, or per-person handoff files. Do not create a competing task tracker.
-- Use the actual ticket system when its link/integration is supplied; do not invent its API. Until available, use your human's current task brief and coordinate collisions directly.
-- Before non-trivial implementation, read open tasks and write a short spec in the existing or new ticket: criterion/outcome, changed paths, contracts/dependencies, and verification. While the tracker is unavailable, use the current task brief. Resolve overlapping scope, files, or contracts with the affected people before editing.
+- [GitHub Issues](https://github.com/ethancurb/cmu-hackathon/issues) is the single source for current tasks, chosen owners, blockers, and completion status. People choose their own work; there are no permanent roles or people-to-component assignments. Personal ledgers record published history, not current task reservations.
+- Before non-trivial implementation, run `gh issue list --state open --limit 100` and inspect relevant issues with `gh issue view <number> --comments`. Create or update a short issue spec: criterion/outcome, changed paths, contracts/dependencies, and verification. Record the human who chose the task as its assignee; do not mistake a shared CLI login for that human.
+- Publish the intended scope and claim before editing, then recheck for overlaps. Resolve competing claims, shared paths, and contract changes with the affected people. An issue assignment is not a file lock. If GitHub access fails, report the failure and coordinate the same scope through your human before overlapping work begins; reconcile the issue when access returns.
 - Keep one shippable increment per ticket; split work larger than a few hours. Small in-scope refinements stay in the existing task. Changes to shared files, contracts, or entry points must be recorded and coordinated even when small.
-- Reference the ticket ID/link in commits and handoffs when available. Close completed work after integration with the change link and observed verification result. Keep updates to your own task; do not reassign another human's work without their agreement.
+- Reference the issue number in commits and handoffs. Agents may create, update, and close their own task issues using `gh issue create`, `gh issue edit`, `gh issue comment`, and `gh issue close`; use `--body-file` for multiline specs/comments. Close work only after integration into main with the change link and observed verification result. Do not reassign another human's work without their agreement.
 - Use separate checkouts/worktrees and one active writer per file. Pause AI before manual edits; isolate ports/data where needed.
 - Reuse canonical types, examples, errors, and fixtures. Coordinate shared contracts, dependencies/lockfiles, migrations, entry points, environment names, and deployment through the affected tickets before simultaneous edits diverge.
-- Keep progress, blockers, and task reservations in the ticket system. After ten blocked minutes or two failed approaches, report the smallest useful request and continue independent work.
+- Update the issue when scope changes, a blocker appears, or work is handed off or completed. After ten blocked minutes or two failed approaches, report the smallest useful request and continue independent work.
+
+## Personal ledgers — update with the work you push
+
+- Use your human's file: [Ethan](ledgers/ethan-ledger.md), [Alex](ledgers/alex-ledger.md), [BigMike](ledgers/bigmike-ledger.md), or [Nate](ledgers/nate-ledger.md). Establish that identity from the task/session; if unknown, ask before writing a ledger. After initial setup, edit only your human's ledger. Agents sharing one human must serialize their writes.
+- Before pushing new work, append one brief entry to your ledger and commit it with the corresponding changes: **UTC timestamp → issue link → changes → exact verification/result → remaining risks or handoff**. Include partial work honestly; a branch push does not mean integration or completion. Retrying the same push needs no duplicate entry.
+- Keep entries about five lines, oldest to newest. Record observed facts, not intended work or copied issue status. Do not backfill claims for another person. Git history supplies the revision; do not try to embed a commit's own hash inside itself. Preserve entries when integrating another person's work.
+- After the push succeeds, report the actual revision and branch in the issue; close it only when the task is integrated and verified. Failed pushes remain unpublished. Onboarding reads the latest published history; unpublished ledger edits cannot coordinate the team.
+- These are agent instructions, not an installed Git hook. Before finishing, verify the ledger entry is included in the published commit. Use Issues for live coordination and the ledgers for durable handoffs; neither enforces locks.
 
 ## Finish verified increments
 

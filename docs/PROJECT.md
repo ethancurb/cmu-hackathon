@@ -45,6 +45,6 @@ Recommended stack remains a small Next.js/TypeScript frontend/API; add shared Po
 
 Open technical facts: authenticated PRT sample, usable occupancy fields, verified per-vehicle capacity metadata if numeric ratios are desired, pilot departure/stop IDs, Google integration credentials, and forecast training/validation data. None is assumed available.
 
-People select tasks through the separate ticket system being built by a teammate. Its link/API has not been supplied. Keep task selection and progress there; this file records product decisions only.
+People choose tasks in [GitHub Issues](https://github.com/ethancurb/cmu-hackathon/issues); it holds current scope, ownership, blockers, and completion. Each person records published changes and verification in their own [ledger](../ledgers/) with each push containing new work. Follow [AGENTS](../AGENTS.md) for the workflow. This file records product decisions, not task status.
 
 Delivery: **September 12, 2026, 4 p.m. EDT**, three-minute presentation/demo. [Official schedule](https://hack-cmu-2026.devpost.com/details/dates). Internal targets: freeze extra features by 10 a.m., rehearse by 1 p.m., submit by 3:30 p.m. Use the time remaining. Form URL/fields, judging slot, Q&A, and post-submission coding rules remain unrecorded.
