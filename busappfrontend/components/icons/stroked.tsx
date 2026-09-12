@@ -53,6 +53,16 @@ export function ChevronLeftIcon({ className }: IconProps) {
   );
 }
 
+/** Two stacked arrows, opposite directions: swaps the values above and below it. */
+export function SwapIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 14 14" className={className} xmlns="http://www.w3.org/2000/svg" {...strokeProps}>
+      <path d="M3 1.5v10M3 11.5L.5 9M3 11.5L5.5 9" />
+      <path d="M11 12.5v-10M11 2.5L8.5 5M11 2.5L13.5 5" />
+    </svg>
+  );
+}
+
 /** Not a font glyph, not a rounded icon-library X: two 2px strokes crossing at 45°, square caps, 14px box. */
 export function CloseXIcon({ className }: IconProps) {
   return (

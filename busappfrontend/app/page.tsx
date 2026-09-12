@@ -6,7 +6,7 @@ import { NavBar } from "@/components/NavBar";
 import { LocationField } from "@/components/LocationField";
 import { TimeRow } from "@/components/TimeRow";
 import { PrimaryButton } from "@/components/PrimaryButton";
-import { ClockIcon } from "@/components/icons/stroked";
+import { ClockIcon, SwapIcon } from "@/components/icons/stroked";
 import { RouteMap } from "./RouteMap";
 import { VehicleModelView } from "./VehicleModelView";
 import { PressureModule } from "./PressureModule";
@@ -19,6 +19,7 @@ import { useDeviceLocation } from "@/lib/geolocation";
 import { useNow } from "@/lib/use-now";
 import { usePressure } from "@/lib/pressure/use-pressure";
 import { pickJourney, useJourneys } from "@/lib/journey/use-journeys";
+import { leaveByTime } from "@/lib/journey/format";
 import { recommendedBus } from "@/lib/journey/recommendation";
 import { SCENARIOS, SCENARIO_DEFINITIONS, stageCount, type Scenario } from "@/lib/pressure/demo";
 import { clock, weekdayShort } from "@/lib/pressure/format";
@@ -113,6 +114,8 @@ export default function HomePage() {
   const journeyList = useMemo(() => (journeys.data?.status === "ok" ? journeys.data.journeys : []), [journeys.data]);
   const journey = pickJourney(journeyList, selectedJourneyId);
   const bestBus = journeys.loading || journeys.error ? null : recommendedBus(journeyList);
+  const leaveBy = journey ? leaveByTime(journey) : null;
+  const leaveByPassed = leaveBy !== null && now !== null && Date.parse(leaveBy) <= now;
 
   // Pressure is modeled for the moment the rider actually leaves: the selected
   // journey's departure when one exists, otherwise the chosen time or now.
@@ -135,6 +138,14 @@ export default function HomePage() {
 
   function handleSelectOrigin(address: AddressResult) {
     setManualOrigin({ label: address.label, lat: address.lat, lng: address.lng });
+  }
+
+  /** Swaps the from/to fields. Snapshots whichever coordinate was live (e.g.
+   * device location) into a fixed point rather than keeping it tracking. */
+  function swapLocations() {
+    if (!tripEnd) return;
+    setManualOrigin({ label: destinationLabel, lat: tripEnd.lat, lng: tripEnd.lng });
+    setDestination({ label: originLabel, lat: origin.lat, lng: origin.lng });
   }
 
   function leaveNow() {
@@ -163,23 +174,34 @@ export default function HomePage() {
       ) : null}
 
       {/* Origin + destination. Real coordinates only come from a picked suggestion (or chat). */}
-      <div className="mt-4 flex flex-col gap-2 px-gutter">
-        <div>
-          <span className="text-footnote text-blue opacity-footnote">From</span>
-          <LocationField value={originLabel} onSelectAddress={handleSelectOrigin} near={origin} />
-          {!scenario && device.source === "fallback" && !manualOrigin ? (
-            <p className="mt-1 text-footnote text-blue opacity-footnote">Device location unavailable or denied. Starting from Carnegie Mellon; edit the field to set your real start.</p>
-          ) : null}
-          {manualOrigin && !scenario ? (
-            <button type="button" onClick={() => setManualOrigin(null)} className="mt-1 text-footnote text-blue underline outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue">
-              Use my device location instead
-            </button>
-          ) : null}
+      <div className="mt-4 flex items-stretch gap-2 px-gutter">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <div>
+            <span className="text-footnote text-blue opacity-footnote">From</span>
+            <LocationField value={originLabel} onSelectAddress={handleSelectOrigin} near={origin} />
+            {!scenario && device.source === "fallback" && !manualOrigin ? (
+              <p className="mt-1 text-footnote text-blue opacity-footnote">Device location unavailable or denied. Starting from Carnegie Mellon; edit the field to set your real start.</p>
+            ) : null}
+            {manualOrigin && !scenario ? (
+              <button type="button" onClick={() => setManualOrigin(null)} className="mt-1 text-footnote text-blue underline outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue">
+                Use my device location instead
+              </button>
+            ) : null}
+          </div>
+          <div>
+            <span className="text-footnote text-blue opacity-footnote">To</span>
+            <LocationField value={destinationLabel} onSelectAddress={handleSelectDestination} near={origin} />
+          </div>
         </div>
-        <div>
-          <span className="text-footnote text-blue opacity-footnote">To</span>
-          <LocationField value={destinationLabel} onSelectAddress={handleSelectDestination} near={origin} />
-        </div>
+        <button
+          type="button"
+          onClick={swapLocations}
+          disabled={!tripEnd || !!scenario}
+          aria-label="Swap from and to"
+          className="h-control w-control shrink-0 self-center rounded border border-border bg-surface text-blue outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:opacity-footnote"
+        >
+          <SwapIcon className="mx-auto h-[18px] w-[18px]" />
+        </button>
       </div>
 
       <div className="mt-[14px] flex items-center">
@@ -211,22 +233,26 @@ export default function HomePage() {
       </div>
 
       <div className="mt-4">
-        <JourneyPanel state={journeys} journey={journey} onSelect={selectJourney} hasDestination={!!tripEnd && !scenario} whenLabel={tripWhen} />
+        <JourneyPanel state={journeys} journey={journey} onSelect={selectJourney} hasDestination={!!tripEnd && !scenario} whenLabel={tripWhen} now={now} />
       </div>
 
       <div className="px-gutter pt-3">
         <PrimaryButton
-          label="Leave now"
+          label={leaveBy && !leaveByPassed ? "Leave by" : "Leave now"}
           icon={
             <span className="flex text-on-ink">
               <ClockIcon className="h-4 w-4" />
             </span>
           }
-          value={journey ? `~${clock(journey.endTime)}` : undefined}
+          value={leaveBy && !leaveByPassed ? clock(leaveBy) : journey ? `~${clock(journey.endTime)}` : undefined}
           onClick={leaveNow}
           disabled={!!scenario || !tripEnd}
         />
-        {journey ? <p className="mt-1 text-center text-footnote text-blue opacity-footnote">Estimated arrival · {journey.realTime ? "realtime PRT" : "scheduled times"}</p> : null}
+        {journey ? (
+          <p className="mt-1 text-center text-footnote text-blue opacity-footnote">
+            {leaveBy && !leaveByPassed ? `Reaches the stop 2 min before the bus · arrive ~${clock(journey.endTime)}` : `Estimated arrival · ${journey.realTime ? "realtime PRT" : "scheduled times"}`}
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-4">

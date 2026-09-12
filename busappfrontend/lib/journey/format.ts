@@ -47,6 +47,30 @@ export function routesLabel(journey: Journey): string {
   return routes.length ? routes.join(" → ") : "walk only";
 }
 
+/** Minutes early a rider should reach the boarding stop, so a slow walk or a
+ * late bus door never costs them the ride. */
+export const LEAVE_BUFFER_MINUTES = 2;
+
+/** ISO time to leave the origin so the rider reaches the boarding stop
+ * `LEAVE_BUFFER_MINUTES` before the bus departs. Walking time is summed from
+ * the provider's own leg durations up to the first transit leg, never
+ * estimated. Null for a walk-only journey (no bus to catch). */
+export function leaveByTime(journey: Journey): string | null {
+  const boardIndex = journey.legs.findIndex((leg) => leg.mode !== "WALK");
+  if (boardIndex === -1) return null;
+  const walkToStopSeconds = journey.legs.slice(0, boardIndex).reduce((sum, leg) => sum + leg.durationSeconds, 0);
+  const boardAt = Date.parse(journey.legs[boardIndex].startTime);
+  return new Date(boardAt - walkToStopSeconds * 1000 - LEAVE_BUFFER_MINUTES * 60_000).toISOString();
+}
+
+/** "in 6 min" / "due"; null while `now` hasn't mounted yet (caller falls back to a clock time). */
+export function minutesUntilLabel(at: string, now: number | null): string | null {
+  if (now === null) return null;
+  const diffMin = Math.floor((Date.parse(at) - now) / 60_000);
+  if (diffMin <= 0) return "due";
+  return `in ${diffMin} min`;
+}
+
 export function journeySummary(journey: Journey): string {
   const parts = [
     `Leave ${clock(journey.startTime)}`,
