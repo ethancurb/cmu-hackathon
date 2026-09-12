@@ -29,6 +29,7 @@ node scripts/probe-signals.mjs  # read-only reachability check of every live sou
 | `app/plan/PressureTimeline.tsx` | Timeline bars with surge band and lowest-window bracket. |
 | `app/demo/page.tsx`, `app/DemoBar.tsx` | Presenter console and the on-home stage strip. |
 | `app/MapCanvas.tsx`, `app/RouteMap.tsx` | MapLibre raster basemap, real PRT route shapes, origin/destination/event-venue markers. |
+| `app/VehicleModelView.tsx`, `lib/vehicle-model.ts` | Lazy-loaded interactive XD60 concept view: orbit, reduced-motion-aware rotation, ordered cutaway reveal and ±30° articulation. Local GLB/posters live in `public/models`; the model is illustrative and never represents occupancy. |
 | `app/api/arrival-times/route.ts` | Live PRT next-bus predictions for the three tracked routes near CMU. |
 
 ## Environment variables

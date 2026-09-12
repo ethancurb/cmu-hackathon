@@ -15,6 +15,7 @@ import { PressureModule } from "./PressureModule";
 import { JourneyPanel } from "./JourneyPanel";
 import { ChatSheet } from "./ChatSheet";
 import { DemoBar } from "./DemoBar";
+import { VehicleModelView } from "./VehicleModelView";
 import { useAppState, type DemoSelection } from "@/lib/app-context";
 import { useArrivalTimes } from "@/lib/arrivals";
 import { CMU_FALLBACK, useDeviceLocation } from "@/lib/geolocation";
@@ -198,7 +199,7 @@ export default function HomePage() {
             viewMode={viewMode}
             onSetViewMode={setViewMode}
           />
-        ) : (
+        ) : viewMode === "list" ? (
           <RouteListView
             selectedRouteId={selectedRouteId}
             onSelectRoute={setSelectedRouteId}
@@ -207,6 +208,8 @@ export default function HomePage() {
             arrivals={arrivals}
             journey={journey}
           />
+        ) : (
+          <VehicleModelView viewMode={viewMode} onSetViewMode={setViewMode} />
         )}
       </div>
 

@@ -43,9 +43,16 @@ flowchart LR
 - `POST /api/pressure` = GET query + `{ riderSignals }` body; `usePressure` switches to POST when rider signals exist. `explain.ts` (`explainSample`, `dayTitle`) is the single source for the "What's happening" section and chat explanations.
 - Ticketmaster now uses the venue's own coordinates and a 15-mile radius; sports feeds keep the venue table.
 
+### Interactive vehicle view (`app/VehicleModelView.tsx`, issue #22)
+
+- `ViewMode` is `map | list | vehicle`; the same top-right control switches all three map-panel views without changing the selected trip, journey or pressure result.
+- Vehicle mode loads Three.js, `GLTFLoader` and `OrbitControls` only after it is opened. The 1.7 MB GLB and two poster fallbacks are local under `public/models`, so the demo does not depend on a model CDN. A failed WebGL context keeps the supplied poster visible instead of leaving a blank panel.
+- The supplied GLB has named roof, side-panel, articulation-pivot and bellows nodes but no baked clips or passengers. `lib/vehicle-model.ts` supplies the tested reveal phases and bellows interpolation; the viewer animates roof removal before the side/window panels, keeps the accordion visible, and caps bend at ±30°. Rotation pauses for `prefers-reduced-motion`; drag/pinch and keyboard arrows remain available.
+- This is an illustrative XD60 concept, not a verified PRT fleet configuration or engineering model. It does not read `/api/pressure`, turn the model index into passengers, or claim occupancy/capacity. That separation is always visible in the panel.
+
 ### Verification
 
-`npm test` (pressure, adapters, journey, chat, explain), typecheck, lint, build; foreground `npm start -- --port 3100` then `qa-screens`, `qa-flow`, `qa-fail`, `qa-menu`, `qa-journey` (chat → cards → map/ETA consistency → pan/zoom/fit → bar evidence → routing 503, chat 503, denied geolocation).
+`npm test` (pressure, adapters, journey, chat, explain, vehicle reveal/articulation), typecheck, lint, build; foreground `npm start -- --port 3100` then `qa-screens`, `qa-flow`, `qa-fail`, `qa-menu`, `qa-journey`, `qa-vehicle` (local GLB load → pause/reveal/bend → Map/List/Vehicle remount → phone overflow/console checks).
 
 ## Transit Pressure (issue #19)
 

@@ -51,6 +51,19 @@ export function BusIcon({ className, style }: IconProps) {
   );
 }
 
+export function ListIcon({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" className={cn(filledBase, className)} style={style} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="2" width="3" height="3" />
+      <rect x="5.5" y="2" width="9.5" height="3" />
+      <rect x="1" y="6.5" width="3" height="3" />
+      <rect x="5.5" y="6.5" width="9.5" height="3" />
+      <rect x="1" y="11" width="3" height="3" />
+      <rect x="5.5" y="11" width="9.5" height="3" />
+    </svg>
+  );
+}
+
 export function MapIcon({ className, style }: IconProps) {
   return (
     <svg viewBox="0 0 16 16" className={cn(filledBase, className)} style={style} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
