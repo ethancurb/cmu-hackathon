@@ -6,6 +6,7 @@ import { decodePolyline } from "../lib/journey/polyline.ts";
 import { acceptResponse, pickJourney, journeyUrl } from "../lib/journey/use-journeys.ts";
 import { recommendedBus } from "../lib/journey/recommendation.ts";
 import { journeyProgress } from "../lib/journey/progress.ts";
+import { leaveByTime } from "../lib/journey/format.ts";
 
 const progressNow = Date.parse("2026-09-12T18:00:00Z");
 const progressPoints = [
@@ -102,6 +103,12 @@ test("itinerary: ETA is the last leg's arrival; duration = walking + waiting + r
   assert.ok(bus.geometry.length >= 2);
   assert.equal(j.legs[0].geometry.length, 2, "an empty walk polyline falls back to its endpoints");
   assert.ok(j.legs.every((l) => Date.parse(l.endTime) >= Date.parse(l.startTime)));
+});
+
+test("leaveByTime reaches the stop 2 minutes before the bus departs, from the provider's own walk leg; walk-only trips have no bus to catch", () => {
+  const j = parseItinerary(itinerary());
+  assert.equal(leaveByTime(j), shift(3), "board at shift(9), minus the 4 min walk leg, minus a 2 min buffer");
+  assert.equal(leaveByTime({ ...j, legs: [j.legs[0]] }), null);
 });
 
 test("malformed legs invalidate the itinerary; the plan parser drops them and orders by arrival", () => {
