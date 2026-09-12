@@ -1,0 +1,80 @@
+/**
+ * Motion stays minimal and deliberate. There is no global
+ * `@media (prefers-reduced-motion: reduce)` block here — an empty one would
+ * be dead weight, and the one transition that exists so far (the home map's
+ * "locate me" recenter pan, in app/RouteMap.tsx) is guarded per-element with
+ * Tailwind's `motion-reduce:transition-none motion-reduce:duration-0`
+ * utilities instead, which is the more precise fix for a single-element
+ * transition. The RULE remains: the first time any interaction state (hover,
+ * press, open/close, drag) gets an actual transition or animation, that same
+ * change must add its reduced-motion handling in the same commit — via the
+ * `motion-reduce:` variant for a one-off, or a real block here if multiple
+ * elements ever need the same treatment at once. Don't let motion ship ahead
+ * of its reduced-motion counterpart.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Color — hex values copied exactly from docs/loadline-design-spec.md */
+  --canvas: #fcfbf7; /* app background, warm off-white */
+  --page: #f5f4ef; /* surround behind the device frame */
+  --surface: #ffffff; /* cards, inputs, chips, map panel */
+
+  --ink: #000000; /* headline + wordmark, and the checkbox's checkmark stroke (same pure black, not --ink-deep) */
+  --ink-deep: #172431; /* filled icons, badges, primary button, checkbox stroke */
+  --blue: #0a38cc; /* all mono text, stroked icons, links */
+  --lime: #c1e003; /* selection, and nothing else */
+
+  --rule: #e4e5e3; /* horizontal dividers between rows */
+  --border: #707780; /* input and select borders */
+  --border-soft: #c9ccd1; /* card and chip borders on the map layer */
+  --bar: #c2c6ca; /* unselected chart bars */
+  --on-ink: #ffffff; /* type on ink-deep */
+
+  /* Type scale — empirically solved at true 390px scale (see scripts/solve-type-scale.mjs).
+     The spec's original values were derived from cap-height on a 288px render and ran
+     ~25% too large; these replace them by measuring real rendered string widths against
+     the reference's measured pixel widths (×1.354 viewport factor) and solving for size. */
+  --text-headline: 46px; /* Page headline, Editorial New 400 — solved from "A quieter trip." */
+  --text-wordmark: 23px; /* Wordmark, Editorial New 400 — solved from "LoadLine" */
+  --text-emphasis-number: 21px; /* Fraktion Mono 700 — solved from "10:00 am" */
+  --text-location-subhead: 19px; /* Fraktion Mono 400 — solved from "Morewood Avenue" */
+  --text-row-title: 15px; /* Fraktion Mono 700 — solved from "8:30 - 10:00 am" */
+  --text-body: 13px; /* Row subtitle + chart helper caption, Fraktion Mono 400 — solved from "Lowest crowding" (12.79) and cross-checked against "Drag across the chart to compare." (12.65) — these two cluster tightly (0.14px apart) */
+  --text-descriptor: 17px; /* Primary select value + chart descriptor, Fraktion Mono 400 — solved from "Today" (16.25) and "Low crowding" (16.93), clustering 0.68px apart. NEW token: originally these both used --text-body, but they measure ~3.5px larger than the row-subtitle/caption cluster — a real split, not the same role */
+  --text-section-label: 16px; /* Recommendation-list section label, Fraktion Mono 400 — solved from "Top recommendations"; not a size in the original spec's table */
+  --text-footnote: 10px; /* Fraktion Mono 400, blue at 70% — solved from "Based on forecast..." (exact solve is 10.481, rounds to 10 — coincidentally equal to the old value, but this is a genuine solve, not a carryover) */
+  --text-nav-label: 24px; /* Nav destination label ONLY, Fraktion Mono 400 — solved from "Plan". NOT applied to chart axis ticks: the old spec grouped "Label / axis / nav" as one 12px role, but I only measured the nav string. Applying 24px to the chart's axis ticks visibly overlapped them, so the axis role stays unsolved rather than inheriting a measurement that doesn't cover it. */
+  --text-axis-label: 16px; /* Chart axis ticks ("6a", "10a"...) — UNSOLVED, no target string measured. Provisionally geometry-scaled (×1.354) from the old 12px value pending a real measurement of an axis tick string. */
+  --text-label: 16px; /* Generic fallback for the remaining unmeasured "Label" usages (dismissible chip text, time-row text, kitchen-sink section headers) — UNSOLVED, same provisional treatment as --text-axis-label. Kept as its own token since these are yet more distinct contexts the old spec's single "Label / axis / nav" grouping conflated; no evidence yet that they share a size with nav-label, axis-label, or each other. */
+  --text-button-label: 18px; /* Primary action button ONLY, Fraktion Mono 400, uppercase — solved from "USE SELECTED TIME" */
+  --text-select-secondary: 14px; /* Secondary select ONLY, Fraktion Mono 400, uppercase — NEW token: solved from "NEXT 7 DAYS" (13.76), which diverges 4px from the button's solve (17.80) — the button and the secondary select are not the same size despite sharing uppercase+tracking treatment */
+
+  --weight-regular: 400;
+  --weight-bold: 700;
+
+  --leading-headline: 1.05;
+  --leading-mono: 1.45;
+
+  --tracking-loud: 0.08em; /* primary action button + secondary select only */
+
+  --opacity-footnote: 0.7;
+
+  /* Geometry — corrected for true 390px viewport scale (×1.354 from the 288px render, rounded to whole px) */
+  --gutter: 27px; /* each side, content width 336px */
+  --content-width: 336px;
+  --radius: 3px; /* controls, cards, buttons, chips, checkbox */
+  --radius-bar: 0px; /* chart bars */
+  --border-width: 1px; /* hairline — left at 1px */
+  --control-height: 43px; /* selects and the footer button */
+}
+
+body {
+  background: var(--canvas);
+  color: var(--blue);
+  /* Temporary fallback behind the real family — see app/font-check.ts */
+  font-family: var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
