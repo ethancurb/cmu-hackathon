@@ -163,6 +163,19 @@ test("surge window, best window, event impact and recommendation react to condit
   assert.equal(buildPressure(early, early.generatedAt, 480).timeline.length, 33);
 });
 
+test("an in-reach event beyond the timeline is listed as upcoming, not as an impact", () => {
+  const b = demoBundle("pirates", 1);
+  const e = b.events[0];
+  b.events = [{ ...e, startTime: shift(e.startTime, 20 * 60), endTime: shift(e.endTime, 20 * 60) }];
+  const r = buildPressure(b, b.generatedAt);
+  assert.equal(r.eventImpacts.length, 0);
+  assert.equal(r.upcoming.length, 1);
+  assert.equal(r.upcoming[0].event.id, e.id);
+  assert.ok(Date.parse(r.upcoming[0].exitPeakAt) > Date.parse(r.upcoming[0].arrivalsPeakAt));
+  b.events = [{ ...e, lat: 40.6, lng: -80.2, startTime: shift(e.startTime, 20 * 60), endTime: shift(e.endTime, 20 * 60) }];
+  assert.equal(buildPressure(b, b.generatedAt).upcoming.length, 0, "out-of-reach events are not upcoming");
+});
+
 test("three deterministic scenarios are stable and distinct", () => {
   for (const name of SCENARIOS) {
     const b = demoBundle(name);

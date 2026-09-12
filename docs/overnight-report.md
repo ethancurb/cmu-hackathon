@@ -10,6 +10,7 @@ Approved direction: predictive **Transit Pressure** replaces the capacity-first 
 - **Home screen** pressure module: dots, score, level, confidence, expected surge window, top-3 WHY, advice + detail, event impact (venue, distance from the trip, start / estimated end / surge window), provenance footnote with expandable sources. The primary button is the recommendation. Live next-bus cards keep PRT arrival times; all mock seat/walk claims were removed.
 - **Plan screen**: real pressure timeline (4 h / 8 h, Today / Tomorrow 7 AM), surge band, lowest-window bracket, departure-window options derived from the model, "Use selected time" feeds the chosen departure back to the home module.
 - **Demo**: `/demo` presenter console (three scenarios, stages side by side) and `/?demo=<scenario>&stage=<n>` which drops the real home screen into a scenario with a stage stepper. Same engine, deterministic inputs.
+- **Upcoming events**: an in-reach event beyond the current timeline (e.g. Sunday's Steelers game for a North Shore trip) is listed on the home module with its expected arrivals peak and exit wave, so a quiet reading now never hides tomorrow's game on the same corridor.
 - **Map**: origin/destination fit, real PRT route shapes (existing), plus a venue marker for the event driving pressure.
 - **Layout**: mobile scrolls again as content grows; desktop renders a centered phone-width column on the page surround, matching the reference frames.
 

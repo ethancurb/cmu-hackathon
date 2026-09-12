@@ -110,6 +110,16 @@ export type EventImpact = {
   role: "MAJOR" | "MINOR";
 };
 
+/** An in-reach event beyond the current timeline, so the rider can plan around it. */
+export type UpcomingEvent = {
+  event: EventSignal;
+  distanceKm: number;
+  /** When arrivals are expected to peak (shortly before the start). */
+  arrivalsPeakAt: string;
+  /** When the exit wave is expected to peak (at the estimated end). */
+  exitPeakAt: string;
+};
+
 export type PressureResult = {
   mode: "LIVE" | "DEMO";
   modelVersion: string;
@@ -123,6 +133,7 @@ export type PressureResult = {
   bestWindow: LowWindow;
   recommendation: Recommendation;
   eventImpacts: EventImpact[];
+  upcoming: UpcomingEvent[];
   freshness: DataFreshness[];
   coverage: string;
   scenario?: string;

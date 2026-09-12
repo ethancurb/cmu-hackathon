@@ -5,7 +5,7 @@ import { Divider } from "@/components/Divider";
 import { PressureDots } from "./PressureDots";
 import type { PressureState } from "@/lib/pressure/use-pressure";
 import { clock, timeRange, dayLabel, CONFIDENCE_WORD, LEVEL_COLOR, LEVEL_WORD, sourcesSummary, confidenceNote } from "@/lib/pressure/format";
-import type { EventImpact, PressureResult } from "@/lib/pressure/types";
+import type { EventImpact, PressureResult, UpcomingEvent } from "@/lib/pressure/types";
 
 const MAX_REASONS = 3;
 
@@ -118,6 +118,13 @@ export function PressureModule({ state, whenLabel }: PressureModuleProps) {
         </>
       ) : null}
 
+      {!majorEvent && data.upcoming[0] ? (
+        <>
+          <Divider />
+          <UpcomingRow upcoming={data.upcoming[0]} />
+        </>
+      ) : null}
+
       <Divider />
       <SourcesRow data={data} note={note} />
     </section>
@@ -139,6 +146,23 @@ function EventImpactRow({ impact }: { impact: EventImpact }) {
       <p className="text-body text-blue opacity-footnote">
         {dayLabel(event.startTime)} {clock(event.startTime)} · {event.endEstimated ? "est. end" : "ends"} {clock(event.endTime)} · surge{" "}
         {timeRange(impact.window.start, impact.window.end)}
+      </p>
+    </div>
+  );
+}
+
+function UpcomingRow({ upcoming }: { upcoming: UpcomingEvent }) {
+  const { event } = upcoming;
+  return (
+    <div className="py-[9px]">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-label text-blue">Upcoming on this trip</span>
+        <span className="text-footnote text-blue opacity-footnote">{upcoming.distanceKm} km away</span>
+      </div>
+      <p className="mt-1 text-row-title font-bold text-blue">{event.name}</p>
+      <p className="text-body text-blue opacity-footnote">
+        {event.venue} · {dayLabel(event.startTime)} {clock(event.startTime)} · arrivals peak ~{clock(upcoming.arrivalsPeakAt)} · exit wave ~
+        {clock(upcoming.exitPeakAt)}{event.endEstimated ? " (est.)" : ""}
       </p>
     </div>
   );

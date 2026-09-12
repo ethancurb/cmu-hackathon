@@ -15,6 +15,7 @@ import type {
   Recommendation,
   SignalBundle,
   SurgeWindow,
+  UpcomingEvent,
 } from "./types.ts";
 import {
   CONFIDENCE,
@@ -444,6 +445,25 @@ function eventImpacts(bundle: SignalBundle, timeline: DemandPrediction[]): Event
   return impacts.sort((a, b) => b.contribution - a.contribution);
 }
 
+/** In-reach events whose influence falls after the timeline: shown as "upcoming" so a
+ * quiet reading now does not hide tomorrow's game on the same corridor. */
+function upcomingEvents(bundle: SignalBundle, timelineEnd: string, impacted: Set<string>): UpcomingEvent[] {
+  const horizonEnd = Date.parse(timelineEnd);
+  const limit = Date.parse(bundle.generatedAt) + 48 * HOUR;
+  return bundle.events
+    .filter((e) => !impacted.has(e.id) && Date.parse(e.startTime) > horizonEnd - HOUR && Date.parse(e.startTime) <= limit)
+    .map((event) => ({ event, distanceKm: corridorDistanceKm(event, bundle.location, bundle.destination) }))
+    .filter(({ distanceKm }) => distanceKm < EVENT.reachKm)
+    .sort((a, b) => Date.parse(a.event.startTime) - Date.parse(b.event.startTime))
+    .slice(0, 3)
+    .map(({ event, distanceKm }) => ({
+      event,
+      distanceKm: Math.round(distanceKm * 10) / 10,
+      arrivalsPeakAt: new Date(Date.parse(event.startTime) + EVENT.inbound.peakFrom * MINUTE).toISOString(),
+      exitPeakAt: new Date(Date.parse(event.endTime) + EVENT.outbound.peakFrom * MINUTE).toISOString(),
+    }));
+}
+
 export function buildPressure(bundle: SignalBundle, start: string, horizonMinutes: number = TIMELINE.defaultHorizonMinutes): PressureResult {
   const horizon = clamp(horizonMinutes, TIMELINE.stepMinutes, TIMELINE.maxHorizonMinutes);
   const samples = Math.floor(horizon / TIMELINE.stepMinutes) + 1;
@@ -453,6 +473,7 @@ export function buildPressure(bundle: SignalBundle, start: string, horizonMinute
   const surge = findSurge(timeline);
   const best = findBestWindow(timeline);
   const anchoredAtNow = Math.abs(Date.parse(start) - Date.parse(bundle.generatedAt)) <= 5 * MINUTE;
+  const impacts = eventImpacts(bundle, timeline);
   return {
     mode: bundle.mode,
     modelVersion: MODEL_VERSION,
@@ -465,7 +486,8 @@ export function buildPressure(bundle: SignalBundle, start: string, horizonMinute
     surge,
     bestWindow: best.window,
     recommendation: recommend(timeline, surge, best, anchoredAtNow),
-    eventImpacts: eventImpacts(bundle, timeline),
+    eventImpacts: impacts,
+    upcoming: upcomingEvents(bundle, timeline[timeline.length - 1].at, new Set(impacts.map((i) => i.event.id))),
     freshness: bundle.freshness,
     coverage: COVERAGE_NOTE,
   };
