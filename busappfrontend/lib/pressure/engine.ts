@@ -538,7 +538,11 @@ export function coverageGaps(bundle: SignalBundle): string[] {
     gaps.push("Campus events, conventions, parades and road closures (no feed connected)");
     if (status("PRT realtime") !== "LIVE") gaps.push("Live service disruptions (PRT realtime feed not usable this run)");
     if (status("PRT occupancy") !== "LIVE" && status("PRT occupancy") !== "STALE") {
-      gaps.push("Current 71B passenger load (PRT TrueTime/BusTime not usable this run)");
+      gaps.push(
+        bundle.occupancy.vehicleId
+          ? "PRT listed 71B but published no passenger-load category or count"
+          : "Current 71B passenger load (PRT TrueTime/BusTime not usable this run)",
+      );
     } else if (!bundle.occupancy.category && bundle.occupancy.passengerCount === null) {
       gaps.push("PRT listed 71B but published no passenger-load category or count");
     }
