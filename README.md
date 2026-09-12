@@ -26,6 +26,7 @@ No API keys are required. Everything live is key-free: MLB Stats API, NHL API, E
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `TICKETMASTER_API_KEY` | no | Adds concert coverage for Pittsburgh venues. Without it, the concert source reports `UNAVAILABLE` (never "no events"). |
+| `PRT_API_KEY` | no | Uses PRT's official BusTime predictions for current 71B categorical passenger load. Without it, the prototype reads the equivalent public TrueTime stop page. |
 | `DATA_MODE` | no | `DEMO` makes `/api/pressure` default to the deterministic scenarios when the request has no `mode`. Default `LIVE`. |
 
 ## Demo

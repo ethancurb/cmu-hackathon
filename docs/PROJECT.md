@@ -1,5 +1,11 @@
 # Product: predictive Transit Pressure
 
+## Decision 2026-09-12, issue #23 (chosen by BigMike)
+
+Add one tightly scoped **current passenger-load observation** beside the existing product: PRT TrueTime's categorical load for route 71B inbound at Fifth Ave + College (stop 3141). It is supporting live evidence, not a replacement for predictive Transit Pressure and not a prediction of how full the bus will be when it reaches another stop.
+
+The UI may say only **Not crowded**, **Somewhat crowded**, **Crowded**, or **Not reported**, preserving PRT's meaning. It never turns a category into a count, percentage, seat estimate, or pressure score. TrueTime supplies no load-measurement timestamp, so the fetch time is labeled separately and cannot establish observation age. The public page supplies current results but no historical archive: the app therefore starts a forward-only 14-day device-local history from actual reported categories, collects while open, and does not backfill the preceding two weeks. Shared or unattended history remains future work requiring a configured durable store and scheduled collector.
+
 ## Decision 2026-09-12, afternoon (issue #20, chosen by Nate)
 
 **LoadLine answers how to get there, when to leave, and what could make the trip busier — on one map-centered screen.** Building on #19:

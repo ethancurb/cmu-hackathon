@@ -16,8 +16,10 @@ import { JourneyPanel } from "./JourneyPanel";
 import { ChatSheet } from "./ChatSheet";
 import { DemoBar } from "./DemoBar";
 import { VehicleModelView } from "./VehicleModelView";
+import { CrowdingPanel } from "./CrowdingPanel";
 import { useAppState, type DemoSelection } from "@/lib/app-context";
 import { useArrivalTimes } from "@/lib/arrivals";
+import { useCrowding } from "@/lib/crowding/use-crowding";
 import { CMU_FALLBACK, useDeviceLocation } from "@/lib/geolocation";
 import { useNow } from "@/lib/use-now";
 import { usePressure } from "@/lib/pressure/use-pressure";
@@ -81,6 +83,7 @@ export default function HomePage() {
 
   const device = useDeviceLocation();
   const arrivals = useArrivalTimes();
+  const crowding = useCrowding();
   const now = useNow();
 
   useEffect(() => {
@@ -243,6 +246,12 @@ export default function HomePage() {
           <Disclosure label="Next bus near CMU" summary="live PRT">
             <ArrivalCards selectedRouteId={selectedRouteId} onSelectRoute={setSelectedRouteId} arrivals={arrivals} compact />
           </Disclosure>
+        </div>
+      ) : null}
+
+      {nearCmu ? (
+        <div className="mt-2 px-gutter">
+          <CrowdingPanel state={crowding} />
         </div>
       ) : null}
 
