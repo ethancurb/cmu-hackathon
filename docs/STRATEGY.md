@@ -34,8 +34,8 @@ Choose the strongest genuine track fit. Fewer entrants do not establish better o
 
 Build a rough complete flow early; test across the actual component boundary. Work from the same contracts and fixtures. Do not let four convincing individual demos substitute for one integrated product. [Execution rules](../AGENTS.md).
 
-Plan backward from submission using the remaining time. Our default checkpoints and cut triggers are in [the schedule](RESEARCH.md#build-and-proof-schedule); the lead records adopted cutoffs in [PROJECT](PROJECT.md). Reserve the final hours for reliability, presentation, and delivery. A passed checkpoint needs evidence, not a status label.
+Plan backward from submission using the remaining time. Our default checkpoints and cut triggers are in [the schedule](RESEARCH.md#build-and-proof-schedule); record agreed cutoffs in [PROJECT](PROJECT.md). Reserve the final hours for reliability, presentation, and delivery. A passed checkpoint needs evidence, not a status label.
 
-For each task, state briefly: **criterion/outcome → visible proof → owned scope → verification**. Follow the chosen win thesis autonomously within your assignment. Escalate a shared pivot with evidence and a replacement, not an unbounded feature proposal.
+For each ticket, state briefly: **criterion/outcome → visible proof → changed scope → verification**. People choose their work through the separate ticket system. Follow the chosen win thesis within that task; propose a shared pivot with evidence, full cost, and what it replaces.
 
 Use [DEMO](DEMO.md) to rehearse on the presentation machine. Show actual behavior, label cached/fixture/recorded fallbacks, and qualify measurements. Historic winners demonstrate possibilities; they do not validate clinical claims, model accuracy, or a guaranteed formula. Read [RESEARCH](RESEARCH.md) selectively when choosing ideas, resolving assumptions, or changing strategy.

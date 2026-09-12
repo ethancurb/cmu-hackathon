@@ -1,57 +1,50 @@
-# Project: is this bus worth waiting for?
+# Product: capacity on the specific bus
 
-The user has selected the problem. This is the recommended execution baseline for the team; no application is implemented yet. The lead records changes here once, so four agents do not independently redesign the product.
+## Confirmed objective
 
-## Problem and win thesis
+Keep the existing Google flow: rider location + destination → walking directions, suitable routes/departures, and estimated arrival. **Our addition answers: how full is the specific bus I am considering right now?** The next question is whether it is likely to be full when it reaches the boarding stop.
 
-A CMU rider can know when a PRT bus will arrive and still be passed by a full bus. Our product helps the rider judge whether to wait for that specific arrival by showing recent crowding/pass-up evidence and the next comparable departure. This pain comes from the team's experience; its frequency and any time savings are not yet measured.
+Current capacity is the first milestone. Route planning, walking-time calculation, destination filtering, and arrival prediction stay with the existing routing providers. A capacity card enriches an already selected journey. This is a proposed build; no routing integration, capacity feed, or application is implemented yet.
 
-**Recommended primary track: Traveling.** Travel decisions are the direct outcome. Optimization is a secondary framing only if we demonstrate an actual objective, constraints, and measured improvement. Choose one main track. Sponsor entries remain optional and must strengthen this same flow.
+The problem comes from the team's experience of full buses passing waiting riders. Its frequency, any measured time savings, and PRT's current occupancy coverage have not been established.
 
-**Competitive thesis:** a focused CMU boarding decision with vehicle/trip-specific evidence, visible freshness, explicit uncertainty, and a useful comparison. Transit already offers agency and rider crowding reports; that mechanism alone is not our originality claim. Validate the current local experience and demonstrate a concrete improvement. [Transit documentation](https://help.transitapp.com/article/445-how-to-track-departures-on-your-transit-line).
+## What the first version must prove
 
-## Three must-have outcomes
+1. **Correct bus:** resolve a Google-selected departure to a PRT vehicle and its current run. A route label such as 71D can describe several buses; do not attach one bus's load to every departure on that route.
+2. **Current capacity:** obtain actual occupancy data and show a visual capacity indicator with source and observation age. Show `passengers / total capacity` only when both are supported; use a reported percentage or category when that is what the source provides. Unknown remains unknown.
+3. **Useful integration:** display the capacity card alongside the selected journey, preserving the existing walking/route/ETA information. Changing departures must select the corresponding vehicle's capacity. A route-input shortcut may be used for an early data demo; it does not prove Google integration.
 
-1. **See the actual arrival:** select one pilot CMU-area origin/destination pair and direction; see the next two comparable buses, vehicle identity, ETA, and data freshness. Live availability is a feasibility gate, not an existing capability.
-2. **Contribute specific evidence:** a rider confirms their bus and reports seats / standing / full in one tap. A waiting rider can report a pass-up separately; that observation does not prove the cause was capacity. A second phone sees the update within ten seconds under demo conditions.
-3. **Make an informed choice:** compare these departures with recent evidence and its source. Missing, stale, conflicting, or ambiguous information remains explicit. Never display invented occupancy percentages or promise that boarding is guaranteed.
+An opt-in phone tracker can help match a rider's movement to a bus and associate a report with that run. It observes participating devices, not all passengers. A unique bus ID references records; it does not inherently encode live occupancy or a verified rated capacity. See [the architecture](ARCHITECTURE.md) for the data distinctions.
 
-The centerpiece is **correctly joining a report to a vehicle's current run, applying freshness/conflict rules, and changing the waiting rider's decision screen**. Use AI to accelerate development; keep the decision logic deterministic and inspectable.
+## Priority order and limits
 
-## Scope and proof
+- **First:** verify PRT live vehicle identity and occupancy. Build one accurate capacity card for one bus.
+- **Then:** attach it to the existing Google journey using a thin adapter. Reuse Google routing APIs where an application integration is needed; do not build another routing engine.
+- **Then, if justified:** foreground phone-to-bus matching and explicit rider reports when they close a demonstrated data gap. A report collection feature is an optional source, not a required replacement for agency data.
+- **Later:** forecast occupancy at the boarding stop using actual boarding/alighting observations or usable historical data. Present it separately from the current reading and validate it before making reliability claims.
 
-Start with one route/direction and a verified stop pair; select actual IDs from the feed. Both compared departures must serve the destination. Add a second route only after its destination compatibility is verified. No guessed stop IDs, city-wide planner, native app, background location collection, passenger counting from app-user counts, custom model training, payments, unrelated login, or operator dashboard.
+City-wide routing, new arrival predictions, a second trip planner, pass-up reporting, social features, required accounts, a native app, background tracking, and new bus hardware are outside the first milestone. Do not add them simply because a tool can generate them quickly. No passenger count from raw app-session counts, and no capacity forecast based solely on GPS or ETA.
 
-Location is an optional aid to selecting a stop/bus. It cannot reveal all passengers, and nearby vehicles can be ambiguous. The rider confirms the match. Exact capacity needs an actual occupancy source; our MVP offers categorical evidence.
+## Competition strategy
 
-| Opening-deck criterion | Our concrete proof |
+**Recommended primary track: Traveling.** We improve the rider's ability to use an existing journey. Optimization becomes a possible alternative only if the finished product demonstrates an actual optimization objective and improvement; the submission selects one main track.
+
+| Opening-deck criterion | Concrete proof |
 | --- | --- |
-| Originality | Show the precise boarding/pass-up decision improvement over the current local workflow; acknowledge existing crowding apps. |
-| Technical difficulty | Live arrival-to-run matching, persisted reports across two clients, and tested expiry/conflict handling. |
-| Usefulness | A rider compares the arriving bus with the next usable departure; observe whether teammates can explain and use the result unaided. |
-| Demo quality | Two ready phones and one readable screen; input → changed result → uncertainty example within three minutes. |
-| Track relevance | Every core interaction helps a traveler decide which bus to wait for. |
+| Originality | Demonstrate the specific improvement to the CMU rider's existing capacity information; validate the local gap instead of claiming crowding displays are new. |
+| Technical difficulty | Reliable journey-to-vehicle matching and live capacity normalization; add phone matching or arrival forecasting only when they work and matter. |
+| Usefulness | A rider sees whether a selected bus has reported room, is full, or lacks current evidence. |
+| Demo quality | Existing journey → correct vehicle → changing capacity visual, with an honest unknown/stale example, within three minutes. |
+| Track relevance | Capacity directly affects whether the traveler can use the selected bus. |
 
-[Opening deck](../HackCMU%202026%20Opening%20Ceremony.pdf), pp. 16–21, 33–35. Presentation/demo is three minutes total. Google Form submission is **September 12, 2026, 4 p.m. EDT** (p. 51; [official schedule](https://hack-cmu-2026.devpost.com/details/dates)). Form URL/fields, judging slot, Q&A, and post-submission coding rules still need recording.
+[Opening deck](../HackCMU%202026%20Opening%20Ceremony.pdf), pp. 16–21, 33–35. Transit already supports crowding data; check actual local coverage and usability before asserting a novelty advantage. [Transit documentation](https://help.transitapp.com/article/445-how-to-track-departures-on-your-transit-line).
 
-## First actions and cutoffs
+## Decisions and next evidence
 
-- **First 20–30 minutes:** lead tests PRT access and captures a real arrival with vehicle/run identity, timestamps, and any occupancy fields; demo owner checks the existing rider workflow. Obtain the required API access through the official developer portal. Do not wait indefinitely for credentials.
-- **Next two hours:** integrate the board and report flow against the same contract. If live access is blocked, use explicitly synthetic runs to verify the software; keep the live-data gap visible and continue resolving it. A simulated screen is not proof of PRT capacity coverage.
-- **By Saturday 10 a.m.:** stop adding features. The technical centerpiece and complete flow should work together; cut extra routes/maps first.
-- **By 1 p.m.:** rehearse the live candidate, honest fallback, and three-minute pitch. **3:30 p.m. internal submission target**, leaving thirty minutes before the official deadline.
+Recommended stack remains a small Next.js/TypeScript frontend/API; add shared Postgres persistence when reports or history require it. Data-source verification comes before provisioning extra infrastructure. The proposed contract and first feasibility check are in [ARCHITECTURE](ARCHITECTURE.md).
 
-These are internal targets. Use the time remaining; do not restart the clock. Pilot coverage needs observations: initially seed a disclosed campus trial with teammates and verify a real report when feasible. No users and no agency occupancy means unknown capacity. Do not manufacture city-wide coverage.
+Open technical facts: authenticated PRT sample, usable occupancy fields, verified per-vehicle capacity metadata if numeric ratios are desired, pilot departure/stop IDs, Google integration credentials, and forecast training/validation data. None is assumed available.
 
-## Four independent lanes
+People select tasks through the separate ticket system being built by a teammate. Its link/API has not been supplied. Keep task selection and progress there; this file records product decisions only.
 
-Paths below are reserved for the proposed scaffold; they do not exist yet. Assign a human to each lane and a backup integrator before concurrent writes. The lead creates the shared shell, schema, and first fixture; builders then work independently. Each agent updates only its own handoff from this current assignment.
-
-| Role | Deliverable and owned paths | Boundary |
-| --- | --- | --- |
-| lead | PRT feasibility/adapter, API integration, shared types/schema, package/config/deploy: `src/lib/transit/`, `src/lib/contracts.ts`, `src/lib/server/`, `src/app/api/`, `db/`, app shell | Publish normalized runs and shared fixture first. Coordinate shared-file edits. |
-| build-a | Waiting-rider board: `src/components/board/` and colocated tests | Consume board response; handle unknown/stale/conflict/error visibly. |
-| build-b | Rider reporting UI plus pure evidence rules: `src/components/report/`, `src/lib/evidence/` and colocated tests | Submit the exact report contract; test run isolation, expiry, and contradictions. Lead wires handlers/storage. |
-| demo | `docs/DEMO.md`, `public/demo/`, `tests/e2e/` | Two-device verification, pilot observation, comparison with existing tools, pitch and submission. |
-
-Humans and backup integrator: unassigned. Recommended stack and exact component contract: [ARCHITECTURE](ARCHITECTURE.md). Product choice is settled; PRT live occupancy, credentials, pilot IDs, and the deployed implementation remain unverified.
+Delivery: **September 12, 2026, 4 p.m. EDT**, three-minute presentation/demo. [Official schedule](https://hack-cmu-2026.devpost.com/details/dates). Internal targets: freeze extra features by 10 a.m., rehearse by 1 p.m., submit by 3:30 p.m. Use the time remaining. Form URL/fields, judging slot, Q&A, and post-submission coding rules remain unrecorded.

@@ -8,7 +8,7 @@ This report supports decisions; it is not required reading before every task. Ev
 
 This is **HackCMU 2026: Midnight Express**, organized by ACM@CMU, September 11–12. It is distinct from ScottyLabs' [TartanHacks](https://2026.tartanhacks.com/). Evidence was checked September 11, 2026. The supplied [opening ceremony deck](../HackCMU%202026%20Opening%20Ceremony.pdf) fills important gaps in the [official event site](https://www.acmatcmu.com/hackcmu2026/) and [Devpost listing](https://hack-cmu-2026.devpost.com/).
 
-Page references below are one-based PDF pages. Current organizer clarifications can supersede this snapshot; the lead records any consequential update in `PROJECT` and updates the affected briefing. Historical rules and generic MLH guidance do not override this event's instructions.
+Page references below are one-based PDF pages. Current organizer clarifications can supersede this snapshot; record consequential updates in `PROJECT` and the affected briefing. Historical rules and generic MLH guidance do not override this event's instructions.
 
 | Decision-relevant fact | Evidence |
 | --- | --- |
@@ -83,14 +83,14 @@ Originality can come from a fresh constraint, interaction, combination, feedback
 
 ## Idea review
 
-When the idea arrives, the lead records a decision in `PROJECT` after this short review. Other agents may challenge assumptions with evidence, but should not create competing product plans. Compare the proposed idea with at most two narrower refinements; avoid spending the event brainstorming indefinitely.
+For initial selection or a proposed pivot, record the agreed decision in `PROJECT` after this short review. Agents may challenge assumptions with evidence, but should not create competing product plans. Compare the proposed idea with at most two narrower refinements; avoid spending the event brainstorming indefinitely. The current confirmed scope is the capacity addition described in `PROJECT`.
 
 1. **Define the promise.** Who is in what situation? What do they do now? What single action and result will the demo show? Why is the chosen track central? Write the track rationale while the scope is still easy to change.
 2. **Find the distinctive mechanism.** Identify the real technical challenge and why solving it changes the user's result. Be able to describe it without listing frameworks or model brands.
 3. **Check feasibility and rules.** Confirm required input data, credentials, devices, deployment capability, and permitted starting material. Label uncertainties. A core dependency with no credible proof path requires a smaller promise or replacement; an optional uncertainty can be cut.
 4. **Test the hardest assumption.** Timebox a real-input experiment, usually 30–45 minutes. Define success before starting: the required result, acceptable latency, valid output, and relevant failure behavior. Keep the experiment's evidence, including failures.
-5. **Inspect the complete experience.** Sketch the three-minute proof and component boundary. If an essential step depends on an unassigned person or unspecified interface, resolve that before parallel implementation diverges.
-6. **Choose and cut.** Compare the candidates using the table below. Record the chosen win thesis, at most three must-have outcomes, explicit cuts, ownership, and the next proof checkpoint in `PROJECT`.
+5. **Inspect the complete experience.** Sketch the three-minute proof and component boundary. Resolve missing interfaces and ticket dependencies before parallel implementation diverges.
+6. **Choose and cut.** Compare the candidates using the table below. Record the chosen win thesis, at most three must-have outcomes, explicit cuts, and the next proof checkpoint in `PROJECT`. Task selection belongs in the separate ticket system.
 
 | Question | Record for each candidate |
 | --- | --- |
@@ -108,11 +108,11 @@ Revisit the idea only when new evidence changes a major assumption: the core met
 
 ## Build and proof schedule
 
-The schedule below is an internal default, not an organizer mandate. Plan from **Saturday, September 12, 4 p.m. EDT**. If starting late, use the remaining time and cut scope; do not restart a fictional 24-hour clock. The lead adopts or adjusts checkpoints in `PROJECT`.
+The schedule below is an internal default, not an organizer mandate. Plan from **Saturday, September 12, 4 p.m. EDT**. If starting late, use the remaining time and cut scope; do not restart a fictional 24-hour clock. Record agreed checkpoints in `PROJECT`.
 
 | Checkpoint | Required evidence and response to failure |
 | --- | --- |
-| First 45 minutes of project work | Choose the primary track and narrow promise; run the riskiest experiment, agree the first contract, and name owners. If the core is infeasible, narrow or replace it now. |
+| First 45 minutes of project work | Choose the primary track and narrow promise; run the riskiest experiment and agree the first contract. If the core is infeasible, narrow or replace it now. |
 | Within the next 2–3 hours | One rough real input → processing → visible result across the intended boundary, reachable by another teammate. If it is still disconnected components, integrate or shrink before adding surfaces. |
 | By Saturday 10 a.m. (six hours before submission) | Feature freeze target: the core and technical centerpiece work together. Cut secondary features; prioritize the missing judged evidence or failure modes. |
 | By 1 p.m. (three hours before submission) | A candidate another teammate can reset, operate, and narrate. Prepare final copy, links, proof, and recovery; stop infrastructure changes that do not solve a demonstrated problem. |
@@ -120,21 +120,21 @@ The schedule below is an internal default, not an organizer mandate. Plan from *
 
 Do not treat a green unit check as proof of these milestones. Test the actual user flow, the real provider path if the claim depends on it, and the presentation machine. A late fix warrants another relevant rehearsal; changing code after submission depends on the event's actual policy.
 
-## Four-person execution
+## Execution with the ticket system
 
-Use four named owners with separate checkouts and bounded write areas. The lead owns shared decisions and serialized integration; two builders own independent product slices; the fourth owner develops the demo, usability, evidence, and submission, plus bounded code appropriate to their skills. The fourth person's work can directly improve three judging dimensions without producing more concurrent edits to core code. Assign a backup integrator so one person is not the only route to progress.
+People select their own work through the separate ticket system being built by a teammate. Its actual link/API must be supplied before agents can use it directly. Keep task selection, progress, blockers, and completion evidence there. This repo defines product strategy and shared interfaces; it does not prescribe permanent roles or reserve file areas for particular people. While the system is unavailable, use the current human task brief and coordinate conflicting work directly.
 
 The boundary must become concrete before parallel producer/consumer work: canonical types/schema, one request/response example, errors, relevant side effects, and a shared fixture. Put executable definitions in code and link them from `ARCHITECTURE`. Do not maintain duplicate contracts in four chats. A field invented by one agent creates integration debt even if its local UI looks convincing.
 
-Only coordinate consequential shared decisions. Within an assigned slice, agents make routine implementation choices, verify the result, and publish small handoffs. One writer controls each file at a time, including when a human switches to manual editing. Shared lockfiles, migrations, entry points, environment names, and demo deployments get one coordinating owner. Separate working directories do not isolate databases, ports, or API quotas.
+Coordinate consequential shared changes through the relevant tickets. Within a selected task, agents make routine implementation choices and verify the result. Keep one active writer per file, including when a human switches to manual editing. Coordinate shared lockfiles, migrations, entry points, environment names, and deployments to avoid concurrent incompatible changes. Separate working directories do not isolate databases, ports, or API quotas.
 
 Small, frequent integration and prompt repair of a broken shared build are supported by software-delivery guidance; applying them to this four-person event is an engineering recommendation, not evidence of hackathon win odds. [DORA: continuous integration](https://dora.dev/capabilities/continuous-integration/). Git worktrees provide separate working trees and index/HEAD state, with other repository resources shared. [Git worktree documentation](https://git-scm.com/docs/git-worktree).
 
-When a dependency blocks a builder for ten minutes or two failed approaches, report the failing evidence and smallest useful request. Let one person own a shared repair. Others continue their independent work. Use the announced mentor channels through a human teammate when they can resolve a concrete blocker; agents should not independently contact organizers.
+When a dependency blocks a task for ten minutes or two failed approaches, report the failing evidence and smallest useful request. Coordinate one repair for a shared failure while other work continues independently. Use the announced mentor channels through a human teammate when they can resolve a concrete blocker; agents should not independently contact organizers.
 
-Plan coverage through the overnight stretch: stagger breaks, leave a usable handoff before stepping away, and keep an integrator and presentation operator available near delivery. Avoid making the final deployment depend on one exhausted person's memory. These are operational precautions for this team's time constraint, not a claim that working all night improves performance.
+Plan coverage through the overnight stretch: stagger breaks and leave reproducible progress in the ticket before stepping away. Keep final build and demo recovery steps usable by the team. These are operational precautions for this team's time constraint, not a claim that working all night improves performance.
 
-Keep the operating system small: `AGENTS` for behavior, `STRATEGY` for shared judgment, `PROJECT` for decisions/ownership, `ARCHITECTURE` for execution facts, one short handoff per person, and `DEMO` for delivery. Main does not need protection, PRs are optional, and no coordination service or process-only CI is required. These files communicate ownership; they are not distributed locks. An unpublished branch's handoff is not automatically visible or current for other teammates.
+Keep context small: `AGENTS` for behavior, `STRATEGY` for shared judgment, `PROJECT` for product decisions, `ARCHITECTURE` for interfaces and execution facts, and `DEMO` for delivery. Main does not need protection and PRs are optional. Do not add a parallel task ledger, per-person status files, coordination service, or process-only CI. Unpublished files are not automatically visible to teammates; use the actual ticket system for shared task state.
 
 ## Demo and submission
 

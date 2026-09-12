@@ -1,96 +1,110 @@
-# Proposed architecture: bus boarding evidence
+# Architecture: a capacity addition to an existing journey
 
-Read [PROJECT](PROJECT.md) first. Recommended baseline: **one Next.js/TypeScript mobile web app, one Supabase Postgres database, one deployment**. This is a design, not an implemented or tested runtime. The lead may adapt the stack once to the team's actual expertise before scaffolding; all lanes share the resulting decision.
+Read [PROJECT](PROJECT.md) first. Recommended baseline: one Next.js/TypeScript mobile web frontend and API. Reuse Google for routing and PRT for vehicle data. Add shared Postgres only when persistence is needed for reports or forecasting history. This is a proposed interface; no runtime or integration exists yet.
 
 ```mermaid
 flowchart LR
-  PRT[PRT arrivals and optional occupancy] --> Adapter[Server adapter and shared cache]
-  Rider[Rider phone: confirm bus and report] --> API[Next.js API]
-  Adapter --> DB[(Postgres: runs, reports, feed cache)]
-  API --> DB
-  DB --> Rules[Pure evidence rules]
-  Rules --> Board[Waiting phone: arrivals and evidence]
+  Google[Existing Google journey and selected departure] --> Match[Resolve PRT vehicle and current run]
+  PRT[PRT vehicle locations and available occupancy] --> Match
+  Phone[Optional consenting phone location] --> Match
+  Match --> Capacity[Read capacity for matched vehicle]
+  Capacity --> UI[Capacity card beside existing journey]
+  History[Later: boarding and alighting data] -.-> Forecast[Optional forecast at boarding stop]
+  Capacity -.-> Forecast
+  Forecast -.-> UI
 ```
 
-## Resolve the data risk first
+## Four different facts
 
-PRT publishes developer resources for GTFS, real-time feeds, and an API requiring an access request. Its indexed BusTime v3 guide describes vehicle/trip identifiers and a passenger-load field, but **we have not authenticated against the live API or verified that PRT populates occupancy**. A documented field is not proof of current usable data. [PRT resources](https://www.rideprt.org/business-center/developer-resources/), [BusTime guide](https://realtime.portauthority.org/bustime/apidoc/docs/DeveloperAPIGuide3_0.pdf).
-
-| Approach | Decision |
+| Fact | How to establish it |
 | --- | --- |
-| Agency vehicle/ETA data plus available occupancy and explicit rider reports | Recommended: avoids recreating arrival prediction; supports useful contributions with a small pilot. |
-| Passive app location as a passenger counter | Exclude: tracks participating devices, not all passengers; adoption and vehicle matching remain unsolved. |
-| New bus-mounted sensors/cameras or a custom capacity model | Exclude from this event: hardware/data access and validation are not established. |
+| Vehicle identity | Agency fleet ID plus trip/service-day context; a route number is insufficient. |
+| Total capacity | Verified metadata for that vehicle/configuration, with a defined seating or total-passenger basis. It is not the current passenger count. |
+| Current occupancy | Agency passenger-load feed, an actual passenger sensor, or a clearly labeled rider observation. GPS alone does not supply it. |
+| Occupancy at the rider's stop | A separate prediction using current occupancy and expected boarding/alighting before that stop. It can change while the bus approaches. |
 
-The lead's first spike must capture a sanitized real response, actual field mapping, service-day/run identity, source timestamps, coverage, rate limits, and one origin/destination pair. Inspect occupancy values and missing-value semantics. GTFS-Realtime occupancy is optional; never decode an absent field as an empty vehicle. [GTFS reference](https://gtfs.org/documentation/realtime/reference/#message-vehicleposition).
+An exact ratio requires a numerator and denominator with compatible meanings. A capacity category cannot be converted into a passenger count. Rated capacity also does not guarantee how many people a driver can board at a particular stop.
 
-If access is delayed after 20–30 minutes, publish the fixture contract and unblock both builders. A labeled demo adapter exercises the same pipeline. If occupancy is absent but identity/ETAs work, use actual rider reports. If live identity is unresolved, restrict reporting to clearly synthetic demo runs until fixed; never attach observations to an arbitrary route or guessed bus.
+## First feasibility check: real capacity data
 
-## Runtime and data flow
+PRT's developer portal describes an API access request and real-time feeds. The supplied [BusTime v3 guide](../DeveloperAPIGuide3_0.pdf), Get Vehicles and Get Predictions sections, documents `psgld` categories `FULL`, `HALF_EMPTY`, `EMPTY`, and `N/A`; thresholds are agency-defined and `N/A` means unknown. **Live PRT population of this field is still unverified.** Preserve its raw value; do not interpret HALF_EMPTY as exactly 50% or EMPTY as zero passengers. The passenger-load field in Get Predictions still describes current load, not a forecast of occupancy at arrival. [PRT resources](https://www.rideprt.org/business-center/developer-resources/), [online API guide](https://realtime.portauthority.org/bustime/apidoc/docs/DeveloperAPIGuide3_0.pdf).
 
-- Mobile browser uses explicit stop selection and large arrival cards. Optional foreground location only suggests candidates; retain manual selection. No native app, background tracker, login flow, or map dependency is needed for the first proof.
-- The server fetches/caches pilot arrivals and available vehicle data. Keep keys server-side. Start with a 20-second upstream refresh target, adjusted to verified limits. Use one shared cache and a database refresh lease per pilot query so concurrent clients do not multiply upstream requests. Bound upstream requests to five seconds; stale cache stays visibly stale.
-- Clients poll our board endpoint every five seconds and immediately after their own report. Ordinary HTTP and shared database persistence suffice. A second client must see the result; module memory is not shared durable storage across deployments.
-- Postgres stores current runs, short-lived reports, and the shared feed cache. The server validates allowed pilot IDs and writes; browser clients receive no database service credential. Scope reports to a run and expire their influence, including when the bus starts another trip.
-- Use a random server-issued session cookie for basic duplicate control, request-ID idempotency, and a small server-enforced write limit. Multiple sessions are not verified independent people. Do not claim fraud resistance or statistical confidence from report counts.
+Spend the first 20–30 minutes obtaining a sanitized authenticated response: vehicle ID, trip/service date, location, source timestamp, passenger-load values, and any numeric count/capacity fields. Check several vehicles and missing-value semantics. Record actual API base URL, access requirements, and limits. A static GTFS schedule or a declared optional occupancy field does not demonstrate live counts. [GTFS-Realtime reference](https://gtfs.org/documentation/realtime/reference/#message-vehicleposition).
 
-## Shared contract before parallel code
+Decision: usable counts plus compatible capacity allow a numeric visual; usable categories allow a categorical visual; unavailable or stale data yields an explicit unknown/stale state. If access is blocked, use labeled fixtures to build the card/contract while keeping the unresolved live-data dependency visible. Do not quietly substitute participating-phone counts. Rider observations are a possible explicitly chosen fallback, not an automatic expansion into a reporting platform.
 
-The lead creates `src/lib/contracts.ts` and a matching fixture before consumers diverge. The following is the proposed wire contract; after implementation, that code file is canonical. IDs are opaque strings, dates are ISO UTC, service dates use the agency's local timezone, and `null` means unknown. Do not rename fields independently.
+## Join Google to the correct bus
+
+Google can supply walking/transit legs, stops, departure times, line names, and headsigns. Its documented `TransitVehicle` describes vehicle type/name; do not treat that object or a label like 71D as a PRT fleet ID. [Google transit routes](https://developers.google.com/maps/documentation/routes/transit-route), [TransitVehicle reference](https://developers.google.com/maps/documentation/javascript/reference/route#TransitVehicle).
+
+Consume the selected leg from the existing integration. If the starting point is the consumer Google Maps app, do not assume it exposes its selected trip to our app automatically. The proposed product integration uses Google's routing APIs in our frontend; an initial manual selection from a known journey is a disclosed shortcut. Capacity is rendered in our frontend, not promised as a new control inside the consumer Google Maps app.
+
+Normalize agency, route label, headsign/direction, boarding-stop name/coordinates, and departure time. Match these to PRT stop/route metadata and live departures, preserving the existing journey. Use a verified stop mapping and a time tolerance based on actual samples; never join on route alone. Return candidate vehicles when the match is ambiguous. Two adjacent buses on the same route must remain separate.
+
+Use an opaque run key derived from provider + vehicle ID + provider trip ID + service date, adjusted to verified feed semantics. Never carry occupancy into the vehicle's next trip. If stable identity cannot be established, return unresolved rather than guessing.
+
+## What phone tracking can contribute
+
+An opt-in phone location stream can be compared with candidate bus positions, movement, direction, and timing across multiple samples. It can suggest that the phone is riding a particular vehicle. Require confirmation when buses are close or confidence is insufficient. A bus-ID selection/scan identifies the vehicle but still does not measure its passengers.
+
+Browser location updates require permission and a secure context. Start with an explicitly active foreground session; do not promise continuous background tracking from a web page. Keep raw trajectories out of persistent storage unless a concrete task requires them. [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/watchPosition).
+
+Ten matched phones means ten participating devices, not necessarily ten passengers. Estimating total riders from participating devices would require a known, validated participation rate and handling duplicate devices and departure detection. That evidence does not exist here. Phone participation may be displayed separately with its correct label; it must never populate the passenger-count field.
+
+## Minimal shared contract
+
+Create `src/lib/contracts.ts` and one matching fixture before independent consumers diverge. That code becomes canonical once implemented; do not independently rename this proposed contract. IDs are strings and timestamps are ISO UTC. Keep live and demo namespaces separate.
 
 ```ts
-type Crowding = "seats" | "standing" | "full" | "unknown";
-type BoardResponse = {
+type CapacityReading =
+  | { kind: "count"; passengers: number; totalCapacity: number | null }
+  | { kind: "percentage"; percent: number }
+  | { kind: "category"; value: "low" | "some_space" | "full"; providerValue: string }
+  | { kind: "unknown" };
+
+type CapacityCard = {
   mode: "live" | "demo";
-  fetchedAt: string;
-  stopId: string;
-  destinationStopId: string;
-  arrivals: Array<{
-    runKey: string;
-    vehicleId: string;
-    routeId: string;
-    headsign: string;
-    expectedAt: string | null;
-    arrivalKind: "realtime" | "scheduled" | "unknown";
-    vehicleObservedAt: string | null;
-    crowding: Crowding;
-    evidenceState: "none" | "single" | "multiple" | "conflicting" | "stale";
-    evidence: Array<{
-      source: "agency" | "rider";
-      kind: "crowding" | "pass_up";
-      crowding: Crowding;
-      observedAt: string;
-      stopId: string | null;
-    }>;
-  }>;
-};
-type ReportRequest = {
-  requestId: string;
   runKey: string;
-  stopId: string;
-  kind: "crowding" | "pass_up";
-  crowding?: "seats" | "standing" | "full";
+  vehicleId: string;
+  routeLabel: string;
+  boardingStopId: string;
+  expectedAtStop: string | null;
+  current: {
+    reading: CapacityReading;
+    source: "agency" | "sensor" | "rider" | "none";
+    observedAt: string | null;
+    state: "fresh" | "stale" | "conflicting" | "unknown";
+  };
+  atStop:
+    | { kind: "unavailable" }
+    | {
+        kind: "forecast";
+        reading: CapacityReading;
+        predictedFor: string;
+        generatedAt: string;
+        modelVersion: string;
+        uncertainty: string;
+      };
 };
 ```
 
-- `GET /api/board?stopId=...&destinationStopId=...` returns `BoardResponse`, ETA-ordered, with only departures confirmed to serve both stops in order. Never rank an incompatible route as an alternative. Empty arrivals are a valid state.
-- `POST /api/reports` accepts `ReportRequest`; return `{ reportId, acceptedAt }`. Require `crowding` only for crowding reports and forbid it for pass-ups. Server assigns receipt/observation time for immediate reports and verifies a known active run/stop association. A retry with the same request ID returns the existing result and does not refresh its timestamp.
-- Errors use `{ error: { code, message, retryable } }`: HTTP 400 invalid input, 409 unknown/expired run, 429 rate limit, 503 unavailable data without usable cache. The UI must distinguish provider failure from no buses.
-- Suggested `runKey`: provider + vehicle ID + provider trip ID + service date, verified against actual data. Vehicle number or route alone is insufficient. Preserve feed identity and observed timestamps; polling time must not make old evidence fresh.
-- Keep one current crowding report per session/run and one pass-up per session/run/stop; replacement updates the observation, retries do not. Database uniqueness prevents duplicate concurrent submissions. Reports never transfer between live and demo namespaces or successive trips.
+- `POST /api/capacity/resolve` accepts `{ agency, routeLabel, headsign, boardingStop: { name, lat, lng }, departureAt }`. Return `{ status: "matched" | "ambiguous" | "unavailable", candidates: [{ runKey, vehicleId, routeLabel, headsign, boardingStopId, expectedAtStop }] }`. A matched response has exactly one candidate; an unavailable response has none. This resolves an existing leg; it does not plan a route.
+- `GET /api/capacity?runKey=...&boardingStopId=...` returns `CapacityCard` for a verified active run and stop. Pass through provider ETA; do not develop an ETA engine. A present vehicle with no occupancy returns a successful card with unknown capacity.
+- Errors: `{ error: { code, message, retryable } }`. Use HTTP 400 for invalid input, 409 for invalid/expired run association, 429 for rate limits, and 503 when the provider is unavailable and no usable cached record exists. Do not mislabel a provider outage as an empty bus.
+- Preserve timestamps from the observation, not the latest fetch. Start with a 90-second agency-reading freshness threshold, clearly a prototype constant to validate. Stale or conflicting records never imply available room. Unknown provider codes remain unknown.
+- Initial adapter mapping: EMPTY → low, HALF_EMPTY → some_space, FULL → full, N/A/missing/unrecognized → unknown. Retain the agency code. Numeric values require real numeric fields; never manufacture them from these categories or session counts.
+- Ratio display is enabled only for verified count plus positive compatible capacity. With count alone, display the count and unknown total; with percentage/category alone, show that representation. Unsupported numbers are absent, not zero.
 
-## Evidence rules: explicit, testable defaults
+## Forecasting is a separate, later capability
 
-Use a pure function receiving normalized arrival, evidence, stop order, and an injected clock. Initial TTLs: **agency occupancy 90 seconds, rider evidence five minutes**. These are prototype constants, not measured reliability claims. Evidence must belong to the exact run; downstream or unknown-position rider reports cannot drive an upstream stop's decision.
+Conceptually: occupancy at arrival = current occupancy + boardings − alightings before the rider's stop. GPS/ETA can identify the intervening time/stops; they do not supply those passenger flows. Current load cannot simply be relabeled a future prediction.
 
-Reject expired evidence from current status. Fresh conflicting crowding categories yield `unknown/conflicting` and show the observations. Otherwise use the available fresh category and show whether it came from one or multiple reports; no reports yields `unknown/none`. Retain timestamps so old reports can be labeled stale. A pass-up is a separate event badge, never silently converted into `full`.
+Only enable `atStop.kind = "forecast"` after obtaining suitable observations/history, defining the predicted event/time, and evaluating against held-out trips or observed arrivals. Compare with a last-reading baseline and disclose uncertainty. Otherwise return `unavailable` and show only the timestamped current load. Keep this out of the first capacity milestone.
 
-Say “Full reported 2 minutes ago; next comparable departure in 8 minutes,” not “This bus will skip you.” Never turn `unknown` into available capacity or treat `standing` as a guaranteed refusal. Current crowding may change before arrival. Compare evidence; no boarding probability, expected wait reduction, or confidence percentage without validation.
+## Runtime and verification
 
-## Verification and setup handoff
+Poll our capacity endpoint about every five seconds. Cache upstream PRT reads at an initial 20-second cadence adjusted to verified limits; coalesce refreshes across clients and bound requests to five seconds. Match cache/storage to the deployment model; process memory is not shared across serverless instances. Add shared Postgres when reports/history/shared cache require persistence, without queues or a separate orchestration service.
 
-Lead owns app shell, API/storage wiring, shared types, migrations, fixtures, dependency lock, and deployment. Builder paths are in `PROJECT`. Pin runtime/package versions during scaffold creation. Install/dev/build/test/deploy commands and environment values are **not configured yet**; replace this paragraph with actual commands once they exist.
+Keep API keys server-side. Planned settings: verified `PRT_API_BASE_URL`, `PRT_API_KEY` if required, `GOOGLE_MAPS_API_KEY` for the server routing adapter when used, and `DATA_MODE`. Database settings are needed only if persistence is selected. Runtime pins, install/dev/check/deploy commands, credentials, and hosting are not configured yet. Publish actual commands when the scaffold exists.
 
-Expected server configuration: `PRT_API_KEY` if required, verified `PRT_API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `DATA_MODE=live|demo`. Keep secret values outside Git and browser bundles. Scope development data and demo data separately; only the lead migrates the shared database.
-
-Acceptance checks: a report for bus A never changes bus B or A's next trip; retry and concurrent duplicates count once; expired/conflicting/missing evidence stays honest; pass-up does not fabricate fullness; provider outage cannot display invented ETAs; incompatible destinations are excluded; two clients share the same persisted update; live/demo modes stay separate. These are tests to implement, not checks already passed.
+Tests to implement: same-route buses do not share load; an ambiguous match stays unresolved; a trip change clears prior association; N/A and unknown codes never render empty; categorical data never becomes a numeric ratio; stale/failed feeds stay visible; phone sessions never become passenger counts; arrival forecasts stay unavailable without a predictor; selecting another journey selects its matched vehicle; live/demo data never mix. These are acceptance criteria, not tests already passed.
