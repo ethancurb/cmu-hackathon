@@ -1,31 +1,38 @@
-# HackCMU: capacity on the bus you plan to take
+# LoadLine: predictive Transit Pressure for Pittsburgh
 
-**The project adds current bus capacity to the existing Google routing experience.** Google handles location, destination, walking, routes, and arrival estimates. We match a selected departure to its PRT vehicle and show trustworthy occupancy in our visual frontend. Forecasting capacity when it reaches the rider is a later step, dependent on data.
+**Google Maps answers "how do I get there?". LoadLine answers "what will transit be like when I go, why, and when should I leave?"**
 
-Recommended track: **Traveling**. Start with the [product brief](docs/PROJECT.md) and [capacity architecture](docs/ARCHITECTURE.md). No application is implemented yet; live occupancy access remains unverified.
+Enter a destination and a time. LoadLine combines Pittsburgh sports schedules (Pirates, Steelers, Penguins), hourly weather, time-of-day patterns, PRT scheduled service and PRT GTFS-Realtime delays/alerts into one explained **Transit Pressure** index (0–100), finds the upcoming **surge window**, tells you **why**, and recommends a **better departure** ("Leave before 9:20 PM", "Wait until 10:25 PM").
 
-## Clone and start
+Scores are a relative model index, never a passenger count or an occupancy percentage. Every prediction lists its reasons and its data sources; missing or stale sources lower confidence instead of being faked.
 
-Each teammate needs GitHub access and a separate clone/worktree.
+Recommended track: **Traveling**. Read the [overnight report](docs/overnight-report.md) for what was built, how the model works and the 60-second demo script. Product decisions live in [PROJECT](docs/PROJECT.md); interfaces in [ARCHITECTURE](docs/ARCHITECTURE.md).
+
+## Run it
 
 ```sh
 git clone https://github.com/ethancurb/cmu-hackathon.git
-cd cmu-hackathon
+cd cmu-hackathon/busappfrontend
+npm install
+npm run build
+npm start -- --port 3100      # production, http://localhost:3100
+# or: npm run dev              # development server
 ```
 
-Open the folder in your coding tool and give its agent this prompt:
+Checks: `npm test` (model + adapter tests), `npm run typecheck`, `npm run lint`, `npm run build`. Runtime QA against a running server: `node scripts/qa-screens.mjs` and `node scripts/qa-flow.mjs` (Playwright).
 
-```text
-Read AGENTS.md and complete its strategy + execution onboarding.
-I am working with: <Ethan, Alex, BigMike, or Nate>.
-My current GitHub issue/task is: <paste the issue link or task>.
-Use the current PROJECT scope and shared ARCHITECTURE contract.
-Check open issues before editing; update my ledger with the work you push.
-```
+No API keys are required. Everything live is key-free: MLB Stats API, NHL API, ESPN NFL schedule, Open-Meteo, PRT GTFS-RT and GTFS static, Photon geocoding, Esri raster tiles.
 
-`AGENTS.md` is canonical. Claude Code and Gemini CLI import it; Cursor and GitHub Copilot have short instruction pointers to it. Keep repository instructions enabled. Supply the prompt above explicitly in any other tool. Existing agent sessions should reread `AGENTS.md` after pulling this update; a Git pull alone does not refresh an agent's conversation.
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `TICKETMASTER_API_KEY` | no | Adds concert coverage for Pittsburgh venues. Without it, the concert source reports `UNAVAILABLE` (never "no events"). |
+| `DATA_MODE` | no | `DEMO` makes `/api/pressure` default to the deterministic scenarios when the request has no `mode`. Default `LIVE`. |
 
-For an existing clean checkout on `main`, run `git pull --ff-only origin main`. On a working branch, have your agent fetch and inspect the changes before integrating them.
+## Demo
+
+- `/` home: destination, time, map, Transit Pressure module, live next-bus times, recommendation.
+- `/plan` timeline: 15-minute pressure bars for the next 4 or 8 hours, surge band, lowest window, departure options.
+- `/demo` presenter console: three deterministic scenarios (PNC Park game night, PPG Paints Arena concert, CMU weekday morning) stepped one signal at a time through the real engine. Each stage opens on the home screen as `/?demo=pirates&stage=3`.
 
 ## Shared context
 
@@ -34,12 +41,10 @@ For an existing clean checkout on `main`, run `git pull --ff-only origin main`. 
 | Winning strategy | [STRATEGY](docs/STRATEGY.md) |
 | Product goals, scope, decisions | [PROJECT](docs/PROJECT.md) |
 | Data sources, interfaces, verification | [ARCHITECTURE](docs/ARCHITECTURE.md) |
-| BusTime API field definitions, read as needed | [Developer guide](DeveloperAPIGuide3_0.pdf) |
+| Overnight build handoff, model, demo script | [overnight report](docs/overnight-report.md), [overnight plan](docs/overnight-plan.md) |
 | Demo and submission | [DEMO](docs/DEMO.md) |
 | Detailed research, read as needed | [RESEARCH](docs/RESEARCH.md) |
 | Current tasks and claims | [GitHub Issues](https://github.com/ethancurb/cmu-hackathon/issues) |
 | Published work by person | [Ethan](ledgers/ethan-ledger.md), [Alex](ledgers/alex-ledger.md), [BigMike](ledgers/bigmike-ledger.md), [Nate](ledgers/nate-ledger.md) |
 
-People choose their own work in GitHub Issues. Agents read and publish task scope there before editing, then commit a short entry in their human's ledger with each push containing new work. Issues hold current status; the four ledgers hold verified history. There are no fixed role assignments or new tracking services. Use the GitHub web UI or authenticate the GitHub CLI as the correct teammate (`gh auth login`, then `gh issue list --state open`).
-
-Keep the build small, share actual contracts, and verify integrated behavior. Main protection and mandatory PRs are not required. The [opening deck](HackCMU%202026%20Opening%20Ceremony.pdf) sets a three-minute presentation/demo and Saturday **September 12, 4 p.m. EDT** submission.
+Agents start from `AGENTS.md`. People choose tasks in GitHub Issues and record pushed work in their ledger. The [opening deck](HackCMU%202026%20Opening%20Ceremony.pdf) sets a three-minute presentation/demo and Saturday **September 12, 4 p.m. EDT** submission.

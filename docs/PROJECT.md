@@ -1,4 +1,22 @@
-# Product: capacity on the specific bus
+# Product: predictive Transit Pressure
+
+## Decision 2026-09-12 (issue #19, approved by Nate)
+
+**LoadLine predicts Transit Pressure.** For a destination and time it combines event timing and proximity (Pirates, Steelers, Penguins; concerts with an optional key), hourly weather, time-of-day patterns, PRT scheduled service and PRT GTFS-Realtime delays/alerts into one explained 0–100 model index, an upcoming surge window, the reasons (WHY) and a departure recommendation. This supersedes the capacity-first milestone below, which stays as history and as the boundary for any future occupancy work.
+
+Non-negotiables: the index is never presented as seats, passengers or percent full; event ends are labeled estimates; missing or stale sources lower confidence rather than being fabricated; deterministic demo scenarios run through the same engine as live data. Existing mapping, geocoding and live PRT arrival times are preserved. Implementation and verification: [overnight report](overnight-report.md); interfaces: [ARCHITECTURE](ARCHITECTURE.md).
+
+| Opening-deck criterion | Concrete proof |
+| --- | --- |
+| Originality | Fusing events + weather + time + service into one explained prediction with a surge window and advice, which route planners do not expose together. |
+| Technical difficulty | Interpretable multi-signal model with distance/time curves, protobuf GTFS-RT decoding, GTFS calendar handling, graceful degradation, relationship tests. |
+| Usefulness | A rider sees pressure now and later, why, and a better time to leave. |
+| Demo quality | Stage a game, then rain, then a delay; score, WHY, surge window and advice react live; survives API failure via scenarios. |
+| Track relevance (Traveling) | Decides when to travel, not only how. |
+
+---
+
+## Superseded: capacity on the specific bus (kept for history)
 
 ## Confirmed objective
 

@@ -13,7 +13,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "LoadLine",
-  description: "How full is the bus you're about to take.",
+  description: "Predictive Transit Pressure for Pittsburgh: what transit will be like when you go, why, and when to leave.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

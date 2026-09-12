@@ -14,12 +14,15 @@ export type MapCanvasHandle = {
 };
 
 export type Destination = { lat: number; lng: number } | null;
+export type EventMarker = { lat: number; lng: number; label: string } | null;
 
 type MapCanvasProps = {
   lat: number;
   lng: number;
   activeRouteId: RouteId;
   destination?: Destination;
+  /** The venue of the event driving Transit Pressure, when one is a major contributor. */
+  eventMarker?: EventMarker;
   onNearestRoute?: (routeId: RouteId) => void;
   zoom?: number;
 };
@@ -113,6 +116,7 @@ type Projected = {
   anchors: Partial<Record<RouteId, Point>>;
   origin: Point | null;
   destination: Point | null;
+  event: Point | null;
 };
 
 /** Static, non-interactive MapLibre backdrop centered on a real coordinate,
@@ -125,13 +129,13 @@ type Projected = {
  * resolved-location update, or a newly picked destination (fits both
  * points in view). */
 export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function MapCanvas(
-  { lat, lng, activeRouteId, destination = null, onNearestRoute, zoom = 14 },
+  { lat, lng, activeRouteId, destination = null, eventMarker = null, onNearestRoute, zoom = 14 },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const shapesRef = useRef<RouteFeature[] | null>(null);
-  const [projected, setProjected] = useState<Projected>({ paths: {}, anchors: {}, origin: null, destination: null });
+  const [projected, setProjected] = useState<Projected>({ paths: {}, anchors: {}, origin: null, destination: null, event: null });
   const [size, setSize] = useState({ w: 0, h: 0 });
 
   // `recompute`/`onNearestRoute` are registered as MapLibre event handlers
@@ -139,8 +143,8 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
   // re-renders, so the latest props live in a ref rather than a closure —
   // otherwise a `moveend` firing long after mount would re-project using
   // whatever lat/lng/destination happened to be current at mount time.
-  const latestRef = useRef({ lat, lng, destination, onNearestRoute });
-  latestRef.current = { lat, lng, destination, onNearestRoute };
+  const latestRef = useRef({ lat, lng, destination, eventMarker, onNearestRoute });
+  latestRef.current = { lat, lng, destination, eventMarker, onNearestRoute };
 
   useImperativeHandle(ref, () => ({
     flyTo: (nextLat, nextLng) => {
@@ -153,7 +157,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     const shapes = shapesRef.current;
     const container = containerRef.current;
     if (!map || !shapes || !container || !map.isStyleLoaded()) return;
-    const { lat: curLat, lng: curLng, destination: curDestination } = latestRef.current;
+    const { lat: curLat, lng: curLng, destination: curDestination, eventMarker: curEvent } = latestRef.current;
 
     const w = container.clientWidth;
     const h = container.clientHeight;
@@ -185,11 +189,13 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
 
     const originPoint = map.project([curLng, curLat]);
     const destinationPoint = curDestination ? map.project([curDestination.lng, curDestination.lat]) : null;
+    const eventPoint = curEvent ? map.project([curEvent.lng, curEvent.lat]) : null;
     setProjected({
       paths,
       anchors,
       origin: { x: originPoint.x, y: originPoint.y },
       destination: destinationPoint ? { x: destinationPoint.x, y: destinationPoint.y } : null,
+      event: eventPoint ? { x: eventPoint.x, y: eventPoint.y } : null,
     });
   };
 
@@ -251,6 +257,12 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     mapRef.current?.setCenter([lng, lat]);
   }, [lat, lng]);
 
+  // A marker arriving or leaving after a pressure refresh needs a re-projection
+  // even though the camera hasn't moved.
+  useEffect(() => {
+    recompute();
+  }, [eventMarker?.lat, eventMarker?.lng]);
+
   // A newly picked destination: fit both points in view (visibly "updates
   // the route") and report which tracked route passes nearest to it. Keyed
   // on the coordinate values, not object identity, so this doesn't refire
@@ -299,6 +311,19 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
             <circle cx={projected.origin.x} cy={projected.origin.y} r={7} fill="var(--surface)" stroke="var(--blue)" strokeWidth={3} />
           ) : null}
         </svg>
+      ) : null}
+
+      {projected.event && eventMarker ? (
+        <div
+          className="pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
+          style={{ left: projected.event.x, top: projected.event.y }}
+          aria-label={`Event venue: ${eventMarker.label}`}
+        >
+          <span className="block h-[11px] w-[11px] rotate-45 border border-surface" style={{ background: "var(--pressure-surge)" }} />
+          <span className="mt-[2px] whitespace-nowrap bg-surface px-1 text-footnote text-blue" style={{ lineHeight: 1.2 }}>
+            {eventMarker.label}
+          </span>
+        </div>
       ) : null}
 
       {projected.destination ? (

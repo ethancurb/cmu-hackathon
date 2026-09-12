@@ -95,6 +95,8 @@ export default function HomePage() {
   const timeLeft = departureAt ? "Leave at" : "Leave now";
   const timeRight = departureAt ? clock(departureAt) : scenario && now ? clock(now) : "Now";
   const recommendation = pressure.data?.recommendation;
+  const majorEvent = pressure.data?.eventImpacts.find((i) => i.role === "MAJOR")?.event ?? null;
+  const eventMarker = majorEvent ? { lat: majorEvent.lat, lng: majorEvent.lng, label: majorEvent.venue } : null;
   const demoRain = demo ? demo.stage >= (scenario?.event ? 2 : 1) : false;
 
   return (
@@ -127,6 +129,7 @@ export default function HomePage() {
             destination={tripEnd}
             origin={scenario ? origin : null}
             weatherOverride={scenario ? { label: demoRain ? "Rain beginning" : "Clear", icon: demoRain ? "cloud" : "sun" } : null}
+            eventMarker={eventMarker}
             weatherDismissed={weatherDismissed}
             onDismissWeather={dismissWeather}
             viewMode={viewMode}

@@ -1,4 +1,44 @@
-# Architecture: a capacity addition to an existing journey
+# Architecture
+
+## Transit Pressure (current, issue #19)
+
+Canonical code: `busappfrontend/lib/pressure`. Providers stay server-side; React consumes `PressureResult` through `usePressure()`.
+
+```mermaid
+flowchart LR
+  UI[destination + time] --> API[/api/pressure]
+  API --> S[service.ts: SignalBundle]
+  E[events: MLB · NHL · ESPN · Ticketmaster?] --> S
+  W[Open-Meteo hourly] --> S
+  G[GTFS snapshot departures] --> S
+  R[PRT GTFS-RT protobuf: delays · alerts · vehicles] --> S
+  D[demo.ts scenarios] --> S
+  S --> M[engine.ts pure model]
+  M --> P[PressureResult: score · level · confidence · timeline · surge · bestWindow · reasons · eventImpacts · freshness]
+  P --> H[PressureModule · PressureTimeline · DemoBar · MapCanvas marker]
+```
+
+### Contract (`lib/pressure/types.ts`)
+
+- `SignalBundle { mode, generatedAt, location, destination?, events[], weather[], transit, departures[], freshness[] }` is the only engine input. Demo and live produce the same shape.
+- `PressureResult { current, timeline[], surge | null, bestWindow, recommendation {kind,label,detail,at}, eventImpacts[], freshness[], coverage, stepMinutes, mode, modelVersion }`. `score` is a 0–100 model index. `DemandReason {type: TIME|EVENT|WEATHER|TRANSIT|SERVICE, label, contribution}` explains every point.
+- `DataFreshness.status ∈ LIVE | STALE | FALLBACK | UNAVAILABLE | DEMO` describes data, not the model. Confidence (`HIGH|MEDIUM|LOW`) is derived from it plus horizon.
+
+### Endpoint
+
+`GET /api/pressure` — LIVE: `lat,lng` (Pittsburgh bounds; omitted = CMU), optional `dlat,dlng` (corridor end), `at` (ISO with zone, −5 min … +48 h), `horizon` (15–480 min). DEMO: `mode=DEMO&scenario=pirates|concert|cmu&stage=n[&at]`. Errors `{error}` with 400; 503 when the live model itself fails. `Cache-Control: no-store`; provider reads are cached/coalesced in-process (`providers/http.ts`).
+
+### Model
+
+Weights and thresholds live only in `lib/pressure/config.ts`; the formula and assumptions are documented in the [overnight report](overnight-report.md). Tests: `scripts/pressure.test.mjs` (relationships the model must satisfy) and `scripts/adapters.test.mjs` (parsers reject malformed input, null weather is missing not zero, GTFS calendar/exception logic).
+
+### Rules
+
+Never display the index as occupancy. Never infer counts from categories. Event end times are estimates and say so. A missing provider lowers confidence and omits its term; it never invents an observation. Keep this section current when the contract changes; the capacity contract below remains the reference for any future occupancy feature.
+
+---
+
+## Earlier: a capacity addition to an existing journey (deferred)
 
 Read [PROJECT](PROJECT.md) first. Recommended baseline: one Next.js/TypeScript mobile web frontend and API. Reuse Google for routing and PRT for vehicle data. Add shared Postgres only when persistence is needed for reports or forecasting history. This is a proposed interface; no runtime or integration exists yet.
 

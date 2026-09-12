@@ -11,7 +11,7 @@ Help four humans win a HackCMU track with a distinctive, working project. Strate
 ## Product boundary
 
 - **Approved overnight direction (#19): predictive Transit Pressure comes first.** Combine event timing/proximity, hourly weather, temporal patterns and verified service evidence into an explained model index and actionable departure windows. Preserve existing mapping/search; do not rebuild routing. This supersedes the earlier capacity-first milestone.
-- Work in `busappfrontend`: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, `npm start -- --port 3100`. Use foreground/session servers only; host Job Object detachment failure is not an app defect.
+- Work in `busappfrontend`: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, `npm start -- --port 3100`, then `node scripts/qa-screens.mjs` and `node scripts/qa-flow.mjs` for runtime QA. Use foreground/session servers only; host Job Object detachment failure is not an app defect. Stop a stale server on :3100 before restarting; rebuilding under a running server breaks it.
 - Canonical pressure types/engine/adapters live in `lib/pressure`; React consumes `/api/pressure` through a hook. Providers stay server-side; deterministic demo inputs run through the same pure engine. No LLM required.
 - Preserve warm canvas, serif display type, compact mono utilities, thin borders, restrained pressure colors and square controls. Mobile must remain usable with accessible scrolling as content grows.
 - Scores are heuristic 0–100 model indices, never occupancy percentages or measured passenger counts. No invented attendance, delays, service, event times or precision. Estimated event end times are labeled assumptions. Missing signals lower confidence.

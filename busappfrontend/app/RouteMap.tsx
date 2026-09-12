@@ -9,7 +9,7 @@ import type { ViewMode } from "@/lib/app-context";
 import { useDeviceLocation } from "@/lib/geolocation";
 import { useWeather } from "@/lib/weather";
 import { ViewToggle } from "./ViewToggle";
-import { MapCanvas, type Destination, type MapCanvasHandle } from "./MapCanvas";
+import { MapCanvas, type Destination, type EventMarker, type MapCanvasHandle } from "./MapCanvas";
 
 const MAP_HEIGHT = 340;
 const INSET = 11; // 8px spec value × 1.354
@@ -31,6 +31,8 @@ type RouteMapProps = {
   origin?: Destination;
   /** Scenario weather chip; when null the live Open-Meteo reading is shown. */
   weatherOverride?: { label: string; icon: "sun" | "cloud" } | null;
+  /** Venue of the event currently driving pressure, if any. */
+  eventMarker?: EventMarker;
   weatherDismissed: boolean;
   onDismissWeather: () => void;
   viewMode: ViewMode;
@@ -43,6 +45,7 @@ export function RouteMap({
   destination,
   origin = null,
   weatherOverride = null,
+  eventMarker = null,
   weatherDismissed,
   onDismissWeather,
   viewMode,
@@ -88,6 +91,7 @@ export function RouteMap({
           lng={location.lng}
           activeRouteId={activeRouteId}
           destination={destination}
+          eventMarker={eventMarker}
           onNearestRoute={onSelectRoute}
         />
 

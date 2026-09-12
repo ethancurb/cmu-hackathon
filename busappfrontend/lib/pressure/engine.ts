@@ -333,8 +333,16 @@ function minutesBetween(a: string, b: string) {
   return (Date.parse(b) - Date.parse(a)) / MINUTE;
 }
 
-export function recommend(timeline: DemandPrediction[], surge: SurgeWindow | null, best: { index: number; window: LowWindow }): Recommendation {
+export function recommend(
+  timeline: DemandPrediction[],
+  surge: SurgeWindow | null,
+  best: { index: number; window: LowWindow },
+  anchoredAtNow = true,
+): Recommendation {
   const current = timeline[0];
+  // A timeline that starts later (a chosen departure, or tomorrow) advises "leave at", never "now".
+  const nowLabel = anchoredAtNow ? "Leave now" : `Leave at ${clockTime(current.at)}`;
+  const nowWord = anchoredAtNow ? "now" : `at ${clockTime(current.at)}`;
   const horizonHours = Math.round(minutesBetween(timeline[0].at, timeline[timeline.length - 1].at) / 60);
   const surgeIndex = surge ? timeline.findIndex((p) => p.at === surge.start) : -1;
   const R = RECOMMENDATION;
@@ -364,8 +372,8 @@ export function recommend(timeline: DemandPrediction[], surge: SurgeWindow | nul
     if (minutesAway <= R.imminentMinutes) {
       return {
         kind: "LEAVE_NOW",
-        label: "Leave now",
-        detail: `Surge expected from ${clockTime(surge.start)} (peak ${surge.peak}/100). Leaving now avoids it.`,
+        label: nowLabel,
+        detail: `Surge expected from ${clockTime(surge.start)} (peak ${surge.peak}/100). Leaving ${nowWord} stays ahead of it.`,
         at: current.at,
       };
     }
@@ -383,8 +391,8 @@ export function recommend(timeline: DemandPrediction[], surge: SurgeWindow | nul
   if (peakSoon.score >= current.score + R.climbDelta && peakSoon.score >= LEVELS.HIGH) {
     return {
       kind: "LEAVE_NOW",
-      label: "Leave now",
-      detail: `Pressure climbs to ${peakSoon.score}/100 (${peakSoon.level.toLowerCase()}) by ${clockTime(peakSoon.at)}. Now is the quieter side of it.`,
+      label: nowLabel,
+      detail: `Pressure climbs to ${peakSoon.score}/100 (${peakSoon.level.toLowerCase()}) by ${clockTime(peakSoon.at)}. Leaving ${nowWord} is the quieter side of it.`,
       at: current.at,
     };
   }
@@ -410,8 +418,8 @@ export function recommend(timeline: DemandPrediction[], surge: SurgeWindow | nul
   }
   return {
     kind: "LEAVE_NOW",
-    label: "Leave now",
-    detail: `No surge expected in the next ${horizonHours} hours. This is a relative index, not a guarantee of room.`,
+    label: nowLabel,
+    detail: `No surge expected in the ${horizonHours} hours after ${clockTime(current.at)}. This is a relative index, not a guarantee of room.`,
     at: current.at,
   };
 }
@@ -444,6 +452,7 @@ export function buildPressure(bundle: SignalBundle, start: string, horizonMinute
   );
   const surge = findSurge(timeline);
   const best = findBestWindow(timeline);
+  const anchoredAtNow = Math.abs(Date.parse(start) - Date.parse(bundle.generatedAt)) <= 5 * MINUTE;
   return {
     mode: bundle.mode,
     modelVersion: MODEL_VERSION,
@@ -455,7 +464,7 @@ export function buildPressure(bundle: SignalBundle, start: string, horizonMinute
     timeline,
     surge,
     bestWindow: best.window,
-    recommendation: recommend(timeline, surge, best),
+    recommendation: recommend(timeline, surge, best, anchoredAtNow),
     eventImpacts: eventImpacts(bundle, timeline),
     freshness: bundle.freshness,
     coverage: COVERAGE_NOTE,
