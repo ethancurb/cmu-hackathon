@@ -1,0 +1,561 @@
+HackCMU 2026 Opening Ceremony - full text extraction
+One-based PDF pages. Consult opening-ceremony.pdf for images, QR codes, and extraction artifacts.
+
+=== PDF PAGE 1 OF 55 ===
+Opening Ceremony
+ Delayed: 6:15PM
+
+=== PDF PAGE 2 OF 55 ===
+Discord
+
+
+Insert qr
+code
+                      Departure
+                            ç√
+
+ acmatcmu
+                         ACM@CMU
+ acm-exec@cs.cmu.ed
+ u
+
+ acmatcmu.com
+
+=== PDF PAGE 3 OF 55 ===
+Departure
+    ç√
+
+
+   ACM@CMU
+
+=== PDF PAGE 4 OF 55 ===
+A little bit about ACM@CMU
+
+● Host HACKCMU, AWAP, and HACKBERRY
+  PI every year
+● Create game, websites, and servers
+  used in hackathons. Do research, get
+  mentorship, and more!
+
+=== PDF PAGE 5 OF 55 ===
+Sponsors + Partners
+
+
+
+
+         ç√
+
+=== PDF PAGE 6 OF 55 ===
+Logistics
+What is HackCMU?
+●   24 Hours
+    Teams of up to 4 people
+                                   ç√
+
+●
+●   Mentorship & Workshops
+●   Hacking
+●   Lots of free food
+●   Prizes
+                              ç√
+
+=== PDF PAGE 7 OF 55 ===
+Schedule
+   ç√
+
+=== PDF PAGE 8 OF 55 ===
+Schedule: Friday
+
+05:00 - 06:00 pm   Boarding
+06:00 - 06:30 pm   Departure (now)
+07:00 - 09:00 pm   Dinner + Sponsor Expo
+       09:00 pm ç√Hacking Starts!
+09:00 - 10:00 pm   IFM Workshop
+10:00 - 10:30 pm   Cursor Workshop
+  12:00 - 1:00 am Midnight Cafe Halte
+
+=== PDF PAGE 9 OF 55 ===
+Schedule: Saturday
+
+ 12:00 - 01:00 pm   Lunch
+       04:00 pm Baggage Check
+04:00 - 06:30 pm    Platform Showcase
+06:30 - 07:00 pm ç√Dinner
+07:00 - 08:00 pm    Arrival
+
+=== PDF PAGE 10 OF 55 ===
+Tracks
+  ç√
+
+=== PDF PAGE 11 OF 55 ===
+Tracks
+
+ç√      ç√    ç√
+
+
+
+
+ç√      ç√
+
+=== PDF PAGE 12 OF 55 ===
+Tracks
+
+Optimizatio
+     ç√          ç√
+
+
+
+     n
+                       ç√
+
+
+
+
+     ç√          ç√
+
+=== PDF PAGE 13 OF 55 ===
+Tracks
+
+Optimizatio
+     ç√
+              Traveling
+                  ç√
+
+
+
+     n
+                          ç√
+
+
+
+
+     ç√           ç√
+
+=== PDF PAGE 14 OF 55 ===
+Tracks
+
+Optimizatio
+     ç√
+              Traveling
+                  ç√
+
+
+
+     n
+                          ç√
+
+
+
+
+Multiplayer
+     ç√           ç√
+
+=== PDF PAGE 15 OF 55 ===
+Tracks
+
+Optimizatio
+     ç√
+              Traveling
+                  ç√
+
+
+
+     n
+                          ç√
+
+
+
+
+Multiplayer
+     ç√
+                Food
+                  ç√
+
+=== PDF PAGE 16 OF 55 ===
+Tracks
+
+Optimizatio                IFM
+     ç√
+              Traveling
+                  ç√
+
+
+
+     n
+                              ç√
+
+
+                          (optional)
+
+
+
+
+Multiplayer
+     ç√
+                Food
+                  ç√
+
+=== PDF PAGE 17 OF 55 ===
+Tracks
+
+Optimizatio               Traveling
+                              ç√
+
+
+
+
+     n   ç√              Multiplayer
+                              ç√
+
+
+
+
+  perhaps optimize          Food
+                              ç√
+
+
+
+
+   something? 0.0
+
+=== PDF PAGE 18 OF 55 ===
+Tracks
+                           Optimizatio
+
+  Traveling
+                                ç√
+
+
+
+                                n
+
+
+            ç√             Multiplayer
+                                ç√
+
+
+
+
+what does traveling mean
+      to you? hm….            Food
+                                ç√
+
+=== PDF PAGE 19 OF 55 ===
+Tracks
+                            Optimizatio
+
+Multiplayer
+                                 ç√
+
+
+
+                                 n
+
+
+            ç√               Traveling
+                                 ç√
+
+
+
+
+this is how you can meet
+people and touch grass :P      Food
+                                 ç√
+
+=== PDF PAGE 20 OF 55 ===
+Tracks
+                     Optimizatio
+                          ç√
+
+
+
+                          n
+Food
+    ç√                Traveling
+                          ç√
+
+
+
+
+Yummy! :D
+                     Multiplayer
+                          ç√
+
+=== PDF PAGE 21 OF 55 ===
+Clarifications
+● You are welcome to use any kind of
+  language or AI and make any kind of
+  applications (must be from scratch).
+● Try to fit into the theme of the track you
+  choose (part of judging criteria)
+● If you feel your project fit into multiple
+  tracks, pick one when submitting. If you
+  have questions about tracks, ask us!
+
+=== PDF PAGE 22 OF 55 ===
+Mentors
+   ç√
+
+=== PDF PAGE 23 OF 55 ===
+Mentors
+Office Hours & Tickets
+● Live Office Hours: Saturday 10am-1pm TEP Simmons
+  B
+● Remote Support throughout hackathon: Discord
+  Tickets
+● Areas
+   ○ Fullstack, Frontend, Backend
+   ○ Mobile Dev
+   ○ Machine Learning, Data Science
+   ○ Cloud Dev
+
+=== PDF PAGE 24 OF 55 ===
+Sponsor Fair
+     ç√
+
+=== PDF PAGE 25 OF 55 ===
+Sponsor Tabling
+IFM
+● A global AI research lab dedicated to open and
+  independent development of frontier-class
+  foundation models.
+● Launched in May 2025 by MBZUAI
+● Operates from advanced lab facilities in Abu Dhabi,
+  Silicon Valley and Paris.
+● IFM's model portfolio
+   ○ K2 series: six fully open-source AI models
+   ○ Jais: the most advanced Arabic LLM
+   ○ PAN: the next-gen World Model for embodied
+       reasoning and real-world simulation
+
+=== PDF PAGE 26 OF 55 ===
+Sponsor Tabling
+SpaceXAI
+● Company behind Grok and SpaceXAI
+● Build frontier AI models to understand the
+  universe
+● One model family, One API
+● Frontier intelligence for useful work:
+  ○ chat
+  ○ hard engineering
+  ○ real-time voice
+  ○ image and video
+
+=== PDF PAGE 27 OF 55 ===
+Sponsor Tabling
+Sandia
+● Delivers essential science and technology to
+  resolve the nation's most challenging security
+  issues and is the nation's premier science and
+  engineering lab for national security and
+  technology
+● Focused on cutting-edge technology, ranging
+  from homeland defense, global security,
+  biotechnology, and environmental preservation
+  to energy and combustion research, computer
+  security, and nuclear defense.
+
+=== PDF PAGE 28 OF 55 ===
+Sponsor Tabling
+Querit
+● Building a global Web Search API and
+  search infrastructure for LLMs, AI agents,
+  and in-app search
+● Transforms the open web into AI-ready
+  knowledge through up-to-date search,
+  structured extraction, and source grounding
+  to answer the latest questions, make
+  accurate judgments, and take reliable
+  action, with unique Multilingual index
+
+=== PDF PAGE 29 OF 55 ===
+Sponsor Tabling
+MLH
+● The world's largest developer community
+
+=== PDF PAGE 30 OF 55 ===
+Sponsor Events
+IFM Workshop
+Friday 09:00 - 10:00 pm
+TEP 1403
+
+Learn about IFM and how to use IFM tool’s like their
+K2 models to build your hackathon project.
+
+=== PDF PAGE 31 OF 55 ===
+Sponsor Events
+Cursor Workshop
+Friday 10:00 - 10:30 pm
+TEP 1403
+
+Learn how to use SpaceXAI's tools like Cursor, Grok
+Imagine, and Grok Bot to build your resume, create a
+portfolio website, and apply to jobs in 30 minutes.
+
+=== PDF PAGE 32 OF 55 ===
+Judging + Expo
+       ç√
+
+=== PDF PAGE 33 OF 55 ===
+Judging
+●   3 min presentation + demo
+●   We will have 3 rooms of judges
+●   Feel free to watch other project’s demos
+●   Will have spreadsheet showing where and
+    when you will be judged
+
+=== PDF PAGE 34 OF 55 ===
+Expo
+● While waiting, walk around expo to see
+  other people’s projects and showcase your
+  own!
+● We will have tables set up for each group
+  with submission
+
+=== PDF PAGE 35 OF 55 ===
+Judging Criteria
+
+Originality    Technical      Demo       Usefulness     Relevance
+               Difficulty     Quality                     (Track
+                                                           only)
+Entirely      Real          Clear,       Practical          How
+novel         technical     understand
+                                 ç√      and fulfills   related the
+              challenges    able, and    a real need      project
+A fresh                     under 3                      idea is to
+approach      vs            minutes                     the track it
+to a                                                    applied to
+problem       ChatGPT
+              wrapper
+
+=== PDF PAGE 36 OF 55 ===
+Prizes
+  ç√
+
+=== PDF PAGE 37 OF 55 ===
+Prize Categories
+Grand Prize    People’s Favorite
+Track Prizes   Best Design Prize
+IFM Prize      MLH Prizes
+Cursor Prize
+Sandia Prize
+
+=== PDF PAGE 38 OF 55 ===
+Grand Prize
+HRT Poker Set
+
+=== PDF PAGE 39 OF 55 ===
+Track Prizes
+1st Place:
+Mini Projector +        ç√
+Jump Airpod Pros
+
+2nd Place:
+Visa Swag Bags          ç√
+
+
+3rd Place:
+  Keyboard +
+  Keychain              ç√
+
+=== PDF PAGE 40 OF 55 ===
+Track Prizes
+1st Place:
+Mini Projector +       ç√
+Jump Airpod Pros
+
+2nd Place:
+Visa Swag Bags         ç√
+
+
+3rd Place:
+Keyboard +
+Keychain
+
+=== PDF PAGE 41 OF 55 ===
+Sponsor Prize
+IFM Kindle Lite
+
+
+
+                    ç√
+
+=== PDF PAGE 42 OF 55 ===
+People’s Favorite Prize
+Ticket to Ride
+
+=== PDF PAGE 43 OF 55 ===
+Best Design Prize
+Fujifilm QuickSnap Camera
+
+=== PDF PAGE 44 OF 55 ===
+Cursor Prize
+Cursor Keyboards
+
+
+
+                    ç√
+
+=== PDF PAGE 45 OF 55 ===
+Sandia Prize: Cybersecurity
+Airpods w/ Noise Cancellation
+
+
+
+
+                     ç√
+
+=== PDF PAGE 46 OF 55 ===
+MLH Prizes
+Best Use of Gemini API: Google Swag Kits
+Best Use of ElevenLabs: Wireless Earbuds
+Best Use of Solana: Ledger Nano S Plus
+Best Use of Vultr: Portable Screens
+Best Use of Auth0: Wireless Headphones
+Best Use of MongoDB Atlas: M5Stack IoT Kit
+
+=== PDF PAGE 47 OF 55 ===
+IFM Talk (10 mins)
+        ç√
+
+=== PDF PAGE 48 OF 55 ===
+Cursor Talk (5 mins)
+         ç√
+
+=== PDF PAGE 49 OF 55 ===
+MLH Talk (5 mins)
+        ç√
+
+=== PDF PAGE 50 OF 55 ===
+Final Things
+     ç√
+
+=== PDF PAGE 51 OF 55 ===
+Final Things
+● Join discord and turn on notifications for
+  announcements
+● Slides are posted on the discord
+● Projects due at 4pm tomorrow (submit google form!)
+● Schedule at         Discord
+  https://www.acmatcmu.com/hackcmu2026/
+                     Insert qr
+                     code
+
+=== PDF PAGE 52 OF 55 ===
+QUestions?
+    ç√
+
+=== PDF PAGE 53 OF 55 ===
+Next Stop: Sponsor
+            ç√
+                   Expo
+
+=== PDF PAGE 54 OF 55 ===
+IFM WORKSHHOP
+    9:00PM
+ TEPPER 1403
+
+=== PDF PAGE 55 OF 55 ===
+SpACEXAI
+WORKSHHOP 10:00PM
+   TEPPER 1403
