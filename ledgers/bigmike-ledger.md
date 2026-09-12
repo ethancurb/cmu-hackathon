@@ -23,3 +23,7 @@ Physical-device touch behavior remains untested; otherwise no known layout regre
 Demo stages carry EMPTY → HALF_EMPTY → FULL; missing load is UNAVAILABLE and omitted from the score.
 Verified `npm test` 48/48 and `npm run typecheck`; build/runtime QA still pending on this revision.
 Risk: PRT still publishes categories far more often than counts; `PRT_API_KEY` is unset here so live reads use the public TrueTime page.
+
+2026-09-12T19:58:00Z → occupancy wiring follow-up → coverage-gap copy distinguishes “listed, no category” from a down feed.
+Verified `npm test` 48/48, typecheck, Turbopack build, `qa-screens` (320/390/768/1280, People on the bus present), `qa-flow` (demo 31→100), live `/api/crowding` + `/api/pressure` (vehicle 3411 listed, category unreported, no invented count), and browser walkthrough of demo Crowded +16 / live Not reported.
+Risk: TrueTime category coverage remains intermittent; no `PRT_API_KEY` in this environment.
