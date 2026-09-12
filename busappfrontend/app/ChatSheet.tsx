@@ -65,6 +65,19 @@ export function ChatSheet({ open, onClose, trip }: ChatSheetProps) {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages, busy]);
 
+  // While the sheet is open, the page behind it must not scroll or receive
+  // wheel/touch input — only the message list inside the sheet should move.
+  useEffect(() => {
+    if (!open) return;
+    const { overflow, touchAction } = document.body.style;
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+    return () => {
+      document.body.style.overflow = overflow;
+      document.body.style.touchAction = touchAction;
+    };
+  }, [open]);
+
   function apply(actions: ChatAction[]) {
     for (const a of actions) {
       if (a.type === "set_origin") setManualOrigin(a.place);
@@ -117,8 +130,8 @@ export function ChatSheet({ open, onClose, trip }: ChatSheetProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center sm:items-center" role="presentation">
-      <button type="button" aria-label="Close planner" onClick={onClose} className="absolute inset-0 bg-ink-deep/30" />
+    <div className="fixed inset-0 z-30 flex items-end justify-center overscroll-none sm:items-center" role="presentation">
+      <button type="button" aria-label="Close planner" onClick={onClose} className="absolute inset-0 bg-ink-deep/30 backdrop-blur-sm" />
       <div
         role="dialog"
         aria-modal="true"
@@ -137,7 +150,7 @@ export function ChatSheet({ open, onClose, trip }: ChatSheetProps) {
           </button>
         </div>
 
-        <div ref={listRef} className="flex min-h-[200px] flex-1 flex-col gap-3 overflow-y-auto px-gutter py-3">
+        <div ref={listRef} className="flex min-h-[200px] flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-gutter py-3">
           {messages.length === 0 ? (
             <div className="flex flex-col gap-2">
               <p className="text-body text-blue">
@@ -166,7 +179,16 @@ export function ChatSheet({ open, onClose, trip }: ChatSheetProps) {
               </div>
               {m.role === "assistant" && m.options?.length ? <OptionChips options={m.options} disabled={busy || i !== messages.length - 1} onPick={(o) => send(o.value ?? o.label)} /> : null}
               {m.role === "assistant" && m.journeyIds?.length ? (
-                <JourneyCards ids={m.journeyIds} journeys={trip.journeys} selectedId={selectedJourneyId ?? trip.journey?.id ?? null} onSelect={selectJourney} onShow={onClose} />
+                <JourneyCards
+                  ids={m.journeyIds}
+                  journeys={trip.journeys}
+                  selectedId={selectedJourneyId ?? trip.journey?.id ?? null}
+                  onPreview={selectJourney}
+                  onChoose={(id) => {
+                    selectJourney(id);
+                    onClose();
+                  }}
+                />
               ) : null}
               {m.role === "assistant" && /timeline|busier|surge/i.test(m.text) ? (
                 <Link href="/plan" className={`text-footnote text-blue underline ${FOCUS_RING}`}>
@@ -216,7 +238,19 @@ function OptionChips({ options, disabled, onPick }: { options: ChatOption[]; dis
   );
 }
 
-function JourneyCards({ ids, journeys, selectedId, onSelect, onShow }: { ids: string[]; journeys: Journey[]; selectedId: string | null; onSelect: (id: string) => void; onShow: () => void }) {
+function JourneyCards({
+  ids,
+  journeys,
+  selectedId,
+  onPreview,
+  onChoose,
+}: {
+  ids: string[];
+  journeys: Journey[];
+  selectedId: string | null;
+  onPreview: (id: string) => void;
+  onChoose: (id: string) => void;
+}) {
   const offered = ids.map((id) => journeys.find((j) => j.id === id)).filter((j): j is Journey => !!j);
   const list = offered.length ? offered : journeys.slice(0, 3);
   if (!list.length) return <p className="text-footnote text-blue opacity-footnote">Journey options will appear on the home screen once the search finishes.</p>;
@@ -225,13 +259,16 @@ function JourneyCards({ ids, journeys, selectedId, onSelect, onShow }: { ids: st
       {list.map((j) => {
         const selected = j.id === selectedId;
         return (
-          <button
+          <div
             key={j.id}
-            type="button"
             role="radio"
             aria-checked={selected}
-            onClick={() => onSelect(j.id)}
-            className={cn("relative flex w-full flex-col rounded border px-3 py-2 text-left", selected ? "border-ink-deep bg-canvas" : "border-border-soft bg-surface", FOCUS_RING)}
+            tabIndex={0}
+            onClick={() => onPreview(j.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") onPreview(j.id);
+            }}
+            className={cn("relative flex w-full flex-col gap-2 rounded border px-3 py-2 text-left", selected ? "border-ink-deep bg-canvas" : "border-border-soft bg-surface", FOCUS_RING)}
           >
             {selected ? <span className="absolute right-[8px] top-[8px] h-[9px] w-[9px] bg-lime" aria-hidden /> : null}
             <span className="text-row-title font-bold text-blue">{routesLabel(j)}</span>
@@ -241,12 +278,19 @@ function JourneyCards({ ids, journeys, selectedId, onSelect, onShow }: { ids: st
             <span className="text-footnote text-blue opacity-footnote">
               {j.transfers ? `${j.transfers} transfer${j.transfers > 1 ? "s" : ""}` : "no transfers"} · {Math.round(j.walkSeconds / 60)} min walking · {j.realTime ? "realtime" : "scheduled"}
             </span>
-          </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onChoose(j.id);
+              }}
+              className={cn("self-start rounded bg-ink-deep px-3 py-[6px] text-button-label uppercase tracking-loud text-on-ink", FOCUS_RING)}
+            >
+              Select route
+            </button>
+          </div>
         );
       })}
-      <button type="button" onClick={onShow} className={`self-start text-footnote text-blue underline ${FOCUS_RING}`}>
-        Show on map
-      </button>
     </div>
   );
 }

@@ -1,5 +1,19 @@
 # Product: predictive Transit Pressure
 
+## Decision 2026-09-12, merge of natepaulo and main (chosen by Nate)
+
+Supersedes issue #24's two-mode switcher for the reason given there (redundant List mode): reinstate **List** as a third `ViewMode` alongside Map and Vehicle. List mode (`app/RouteListView.tsx`) is the trip routing module for selecting a bus route — the selected journey's legs when a trip is chosen, otherwise the three tracked routes with live PRT times as a radio group — kept because #20's itinerary/recommendation flow depends on a route-selection surface beyond the map, and because it is a more legible home for that information than the always-visible arrival tiles were. `ArrivalCards.tsx` (the #24 tiles) stays removed, per #20's original reasoning; the near-CMU gate it used now shows `CrowdingPanel` (#23) instead. Vehicle mode (#22) is unchanged and kept as the third view. No pressure/journey/crowding contract changes.
+
+## Decision 2026-09-12, issue #24 (chosen by BigMike, partially superseded above)
+
+The home visual switcher has two purposeful modes: **Map** and **Vehicle**. Remove the redundant List mode and keep the three live route-arrival tiles visible immediately below either visual surface, restoring the earlier scan order the user preferred. The tiles remain nearby-CMU context rather than a claim about the selected itinerary; no arrival, journey, crowding, or Transit Pressure contract changes.
+
+## Decision 2026-09-12, issue #23 (chosen by BigMike)
+
+Add one tightly scoped **current passenger-load observation** beside the existing product: PRT TrueTime's categorical load for route 71B inbound at Fifth Ave + College (stop 3141). It is supporting live evidence, not a replacement for predictive Transit Pressure and not a prediction of how full the bus will be when it reaches another stop.
+
+The UI may say only **Not crowded**, **Somewhat crowded**, **Crowded**, or **Not reported**, preserving PRT's meaning. It never turns a category into a count, percentage, seat estimate, or pressure score. TrueTime supplies no load-measurement timestamp, so the fetch time is labeled separately and cannot establish observation age. The public page supplies current results but no historical archive: the app therefore starts a forward-only 14-day device-local history from actual reported categories, collects while open, and does not backfill the preceding two weeks. Shared or unattended history remains future work requiring a configured durable store and scheduled collector.
+
 ## Decision 2026-09-12, afternoon (issue #20, chosen by Nate)
 
 **LoadLine answers how to get there, when to leave, and what could make the trip busier — on one map-centered screen.** Building on #19:

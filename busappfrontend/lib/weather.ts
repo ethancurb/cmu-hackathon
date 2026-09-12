@@ -2,6 +2,17 @@
 
 import { useEffect, useState } from "react";
 
+/** Extra fields for the weather details popup; absent while loading, on
+ * fetch failure, or for a demo-scenario override that doesn't simulate them. */
+export type WeatherDetail = {
+  conditionLabel: string;
+  temperatureF: number;
+  feelsLikeF: number;
+  humidityPercent: number;
+  windMph: number;
+  precipitationInchesPerHour: number;
+};
+
 export type WeatherInfo = {
   label: string;
   icon: "sun" | "cloud";
@@ -9,6 +20,7 @@ export type WeatherInfo = {
   /** True when the fetch failed — label reads "Weather unavailable" rather
    * than a fabricated condition. */
   error: boolean;
+  detail: WeatherDetail | null;
 };
 
 // WMO weather codes, per Open-Meteo's `current.weather_code`.
@@ -51,7 +63,7 @@ function isSnowCode(code: number): boolean {
   return (code >= 71 && code <= 77) || code === 85 || code === 86;
 }
 
-const LOADING_STATE: WeatherInfo = { label: "Loading weather…", icon: "cloud", loading: true, error: false };
+const LOADING_STATE: WeatherInfo = { label: "Loading weather…", icon: "cloud", loading: true, error: false, detail: null };
 
 /** Fetches live conditions for one coordinate from Open-Meteo (no API key).
  * While it is actively precipitating, uses the 15-minute forecast to report
@@ -66,8 +78,8 @@ export function useWeather(lat: number, lng: number): WeatherInfo {
 
     const url =
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
-      `&current=temperature_2m,precipitation,weather_code,is_day` +
-      `&minutely_15=precipitation&temperature_unit=fahrenheit&forecast_days=1&timezone=auto`;
+      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,is_day` +
+      `&minutely_15=precipitation&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&forecast_days=1&timezone=auto`;
 
     fetch(url)
       .then((res) => {
@@ -83,6 +95,15 @@ export function useWeather(lat: number, lng: number): WeatherInfo {
         const code: number = current.weather_code;
         const isDay = current.is_day === 1;
         const raining = current.precipitation > 0 && isPrecipitationCode(code);
+
+        const detail: WeatherDetail = {
+          conditionLabel: conditionLabel(code),
+          temperatureF: temp,
+          feelsLikeF: Math.round(current.apparent_temperature),
+          humidityPercent: Math.round(current.relative_humidity_2m),
+          windMph: Math.round(current.wind_speed_10m),
+          precipitationInchesPerHour: current.precipitation,
+        };
 
         const minutelyTimes: string[] | undefined = data.minutely_15?.time;
         const minutelyPrecip: number[] | undefined = data.minutely_15?.precipitation;
@@ -101,6 +122,7 @@ export function useWeather(lat: number, lng: number): WeatherInfo {
             icon: "cloud",
             loading: false,
             error: false,
+            detail,
           });
           return;
         }
@@ -110,10 +132,11 @@ export function useWeather(lat: number, lng: number): WeatherInfo {
           icon: isDay && (code === 0 || code === 1) ? "sun" : "cloud",
           loading: false,
           error: false,
+          detail,
         });
       })
       .catch(() => {
-        if (!cancelled) setState({ label: "Weather unavailable", icon: "cloud", loading: false, error: true });
+        if (!cancelled) setState({ label: "Weather unavailable", icon: "cloud", loading: false, error: true, detail: null });
       });
 
     return () => {

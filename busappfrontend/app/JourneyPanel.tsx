@@ -1,11 +1,10 @@
 "use client";
 
 import { Divider } from "@/components/Divider";
-import { Disclosure } from "@/components/Disclosure";
-import { BusIcon, WalkIcon } from "@/components/icons/filled";
+import { JourneyItinerary } from "./JourneyItinerary";
 import { cn } from "@/lib/cn";
 import { clock } from "@/lib/pressure/format";
-import { durationLabel, legDetail, legTitle, minutes, routesLabel } from "@/lib/journey/format";
+import { durationLabel, minutes, routesLabel } from "@/lib/journey/format";
 import type { Journey } from "@/lib/journey/types";
 import type { JourneyState } from "@/lib/journey/use-journeys";
 
@@ -22,8 +21,8 @@ type JourneyPanelProps = {
 /**
  * Compact selected-trip summary plus selectable journey cards. Every time is a
  * provider value: arrival is labeled an estimate and marked realtime or
- * scheduled. The full leg list (walk, board, ride, transfer, walk) is collapsed
- * by default and expands in document flow.
+ * scheduled. Swipeable itinerary steps remain collapsed by default, with a
+ * location-based current-step outline and optional stop details.
  */
 export function JourneyPanel({ state, journey, onSelect, hasDestination, whenLabel }: JourneyPanelProps) {
   const { data, loading, error } = state;
@@ -102,32 +101,7 @@ export function JourneyPanel({ state, journey, onSelect, hasDestination, whenLab
           <div className="mt-2">
             <Divider />
           </div>
-          <Disclosure label="Itinerary" summary={`${journey.legs.length} legs`}>
-            <ol className="flex flex-col gap-[6px]">
-              {journey.legs.map((leg, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <span className="mt-[2px] flex h-4 w-4 shrink-0 items-center justify-center">
-                    {leg.mode === "WALK" ? <WalkIcon className="h-4 w-4" /> : <BusIcon className="h-4 w-4" />}
-                  </span>
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-body font-bold text-blue">{legTitle(leg)}</span>
-                    <span className="text-footnote text-blue opacity-footnote">{legDetail(leg)}</span>
-                    {leg.mode !== "WALK" ? (
-                      <span className="text-footnote text-blue opacity-footnote">
-                        {leg.agency ?? "PRT"} · {leg.realTime ? "realtime" : "scheduled"} · {durationLabel(leg.durationSeconds)}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="shrink-0 text-footnote text-blue">{clock(leg.startTime)}</span>
-                </li>
-              ))}
-              <li className="flex items-baseline justify-between gap-3 text-body text-blue">
-                <span className="font-bold">Arrive (estimate)</span>
-                <span>~{clock(journey.endTime)}</span>
-              </li>
-            </ol>
-            {data?.status === "ok" ? <p className="mt-2 text-footnote text-blue opacity-footnote">Itinerary via {data.provider} · fetched {clock(data.fetchedAt)}</p> : null}
-          </Disclosure>
+          <JourneyItinerary key={journey.id} journey={journey} provider={data?.status === "ok" ? data.provider : null} routeUnavailable={!!error || loading} />
         </>
       ) : null}
     </section>

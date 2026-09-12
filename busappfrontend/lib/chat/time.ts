@@ -2,8 +2,14 @@
 // instant; the local calendar is always America/New_York, whatever the server runs in.
 const TIMEZONE = "America/New_York";
 
-function localDate(from: Date): string {
+export function localDate(from: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(from);
+}
+
+/** The Pittsburgh-local wall-clock hour/minute an ISO instant falls on. */
+export function localHourMinute(at: string): { hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, hour: "numeric", minute: "numeric", hourCycle: "h23" }).formatToParts(new Date(at));
+  return { hour: Number(parts.find((p) => p.type === "hour")?.value), minute: Number(parts.find((p) => p.type === "minute")?.value) };
 }
 
 /** A local date + clock time as ISO, trying both Eastern offsets so DST is handled. */

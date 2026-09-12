@@ -9,22 +9,27 @@ import { PrimaryButton } from "@/components/PrimaryButton";
 import { ClockIcon } from "@/components/icons/stroked";
 import { RouteMap } from "./RouteMap";
 import { RouteListView } from "./RouteListView";
+import { VehicleModelView } from "./VehicleModelView";
 import { PressureModule } from "./PressureModule";
 import { JourneyPanel } from "./JourneyPanel";
 import { ChatSheet } from "./ChatSheet";
 import { DemoBar } from "./DemoBar";
+import { CrowdingPanel } from "./CrowdingPanel";
 import { useAppState, type DemoSelection } from "@/lib/app-context";
 import { useArrivalTimes } from "@/lib/arrivals";
-import { useDeviceLocation } from "@/lib/geolocation";
+import { useCrowding } from "@/lib/crowding/use-crowding";
+import { CMU_FALLBACK, useDeviceLocation } from "@/lib/geolocation";
 import { useNow } from "@/lib/use-now";
 import { usePressure } from "@/lib/pressure/use-pressure";
 import { pickJourney, useJourneys } from "@/lib/journey/use-journeys";
 import { recommendedBus } from "@/lib/journey/recommendation";
+import { distanceKm } from "@/lib/pressure/geo";
 import { SCENARIOS, SCENARIO_DEFINITIONS, stageCount, type Scenario } from "@/lib/pressure/demo";
 import { clock, weekdayShort } from "@/lib/pressure/format";
 import type { AddressResult } from "@/lib/geocode";
 
 const DEFAULT_ORIGIN_LABEL = "Carnegie Mellon (default)";
+const NEARBY_CARDS_KM = 1.5;
 
 /** `/?demo=pirates&stage=2` puts the home screen into a deterministic scenario
  * (see lib/pressure/demo.ts). Read after mount so server and client first
@@ -78,6 +83,7 @@ export default function HomePage() {
 
   const device = useDeviceLocation();
   const arrivals = useArrivalTimes();
+  const crowding = useCrowding();
   const now = useNow();
 
   useEffect(() => {
@@ -128,6 +134,7 @@ export default function HomePage() {
   const majorEvent = pressure.data?.eventImpacts.find((i) => i.role === "MAJOR")?.event ?? null;
   const eventMarker = majorEvent ? { lat: majorEvent.lat, lng: majorEvent.lng, label: majorEvent.venue } : null;
   const demoRain = demo ? demo.stage >= (scenario?.event ? 2 : 1) : false;
+  const nearCmu = !demo && distanceKm(origin, CMU_FALLBACK) <= NEARBY_CARDS_KM;
 
   function handleSelectDestination(address: AddressResult) {
     setDestination({ label: address.label, lat: address.lat, lng: address.lng });
@@ -205,7 +212,7 @@ export default function HomePage() {
             viewMode={viewMode}
             onSetViewMode={setViewMode}
           />
-        ) : (
+        ) : viewMode === "list" ? (
           <RouteListView
             selectedRouteId={selectedRouteId}
             onSelectRoute={setSelectedRouteId}
@@ -214,6 +221,8 @@ export default function HomePage() {
             arrivals={arrivals}
             journey={journey}
           />
+        ) : (
+          <VehicleModelView viewMode={viewMode} onSetViewMode={setViewMode} />
         )}
       </div>
 
@@ -241,6 +250,12 @@ export default function HomePage() {
           routeStatus={scenario ? "Demo: routes off" : !tripEnd ? "Pick a destination" : journeys.loading ? "Finding your bus…" : journeys.error ? "Routes unavailable" : "No bus option found"}
           onShowJourney={showRecommendedJourney} />
       </div>
+
+      {nearCmu ? (
+        <div className="mt-2 px-gutter">
+          <CrowdingPanel state={crowding} />
+        </div>
+      ) : null}
 
       <div className="mt-auto px-gutter pb-4 pt-4">
         <button
