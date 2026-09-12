@@ -7,7 +7,7 @@ import type { RiderSignal } from "@/lib/pressure/types";
 import { JOURNEY_DEFAULTS } from "@/lib/journey/types";
 import { loadCachedDestination, saveCachedDestination } from "@/lib/destination-cache";
 
-export type ViewMode = "map" | "list" | "vehicle";
+export type ViewMode = "map" | "vehicle";
 
 /** Presenter/demo selection: a deterministic scenario run through the real engine. */
 export type DemoSelection = { scenario: Scenario; stage: number };

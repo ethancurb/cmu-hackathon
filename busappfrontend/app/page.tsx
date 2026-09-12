@@ -8,7 +8,6 @@ import { TimeRow } from "@/components/TimeRow";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { ClockIcon } from "@/components/icons/stroked";
 import { RouteMap } from "./RouteMap";
-import { RouteListView } from "./RouteListView";
 import { VehicleModelView } from "./VehicleModelView";
 import { PressureModule } from "./PressureModule";
 import { JourneyPanel } from "./JourneyPanel";
@@ -16,7 +15,6 @@ import { ChatSheet } from "./ChatSheet";
 import { TimeSheet } from "./TimeSheet";
 import { DemoBar } from "./DemoBar";
 import { useAppState, type DemoSelection } from "@/lib/app-context";
-import { useArrivalTimes } from "@/lib/arrivals";
 import { useDeviceLocation } from "@/lib/geolocation";
 import { useNow } from "@/lib/use-now";
 import { usePressure } from "@/lib/pressure/use-pressure";
@@ -80,7 +78,6 @@ export default function HomePage() {
   } = useAppState();
 
   const device = useDeviceLocation();
-  const arrivals = useArrivalTimes();
   const now = useNow();
 
   useEffect(() => {
@@ -207,15 +204,6 @@ export default function HomePage() {
             onDismissWeather={dismissWeather}
             viewMode={viewMode}
             onSetViewMode={setViewMode}
-          />
-        ) : viewMode === "list" ? (
-          <RouteListView
-            selectedRouteId={selectedRouteId}
-            onSelectRoute={setSelectedRouteId}
-            viewMode={viewMode}
-            onSetViewMode={setViewMode}
-            arrivals={arrivals}
-            journey={journey}
           />
         ) : (
           <VehicleModelView viewMode={viewMode} onSetViewMode={setViewMode} />

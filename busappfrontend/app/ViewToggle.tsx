@@ -1,5 +1,5 @@
 import { IconToggle } from "@/components/IconToggle";
-import { MapIcon, ListIcon, BusIcon } from "@/components/icons/filled";
+import { MapIcon, BusIcon } from "@/components/icons/filled";
 import type { ViewMode } from "@/lib/app-context";
 
 const INSET = 11;
@@ -13,12 +13,6 @@ export function ViewToggle({ viewMode, onChange }: { viewMode: ViewMode; onChang
         active={viewMode === "map"}
         onClick={() => onChange("map")}
         label="Map view"
-      />
-      <IconToggle
-        icon={<ListIcon className="h-[22px] w-[22px]" />}
-        active={viewMode === "list"}
-        onClick={() => onChange("list")}
-        label="Route list"
       />
       <IconToggle
         icon={<BusIcon className="h-[22px] w-[22px]" />}

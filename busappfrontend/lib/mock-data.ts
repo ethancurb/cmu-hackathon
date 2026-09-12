@@ -1,7 +1,7 @@
 /**
- * Static route configuration for the three tracked routes. Arrival times are
- * live (lib/arrivals.ts); occupancy is never shown: LoadLine models
- * Transit Pressure (lib/pressure), not passenger counts.
+ * Static route configuration for the three tracked routes. Occupancy is
+ * never shown: LoadLine models Transit Pressure (lib/pressure), not
+ * passenger counts.
  */
 
 export type RouteId = "71" | "61" | "54";
