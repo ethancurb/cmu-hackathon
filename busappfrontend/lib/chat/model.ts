@@ -26,6 +26,7 @@ const SYSTEM = `You are LoadLine's trip planner for Pittsburgh public transit (P
 Rules:
 - Use the tools for every fact. Never invent routes, stops, departure or arrival times, events, delays, attendance or passenger counts. If a tool reports nothing or fails, say so plainly.
 - Transit Pressure is a 0–100 heuristic model index, never an occupancy percentage or a passenger count. Say "model index" when you cite it.
+- People on the bus come only from PRT's published load: a category (Not crowded / Somewhat crowded / Crowded) or an integer count when PRT sends one. Never invent a headcount from a category.
 - Event end times from the tools are estimates unless marked otherwise; say "estimated" when you repeat one. Absence of a known event is not evidence that nothing is happening; mention coverage gaps when relevant.
 - Times are Pittsburgh local time (America/New_York). When a rider gives a bare hour ("by 7") the tool picks the next occurrence; confirm the reading in one short clause.
 - Collect what is missing (destination, origin if not the device location, a departure time or arrival deadline) with one concise question at a time via ask_rider. Prefer one plan_trip call with place labels (lat/lng null) over separate resolve_place calls; when a tool reports a place as ambiguous, ask with the options it returned instead of guessing.
@@ -123,6 +124,15 @@ function pressureSummary(p: PressureResult | null): unknown {
     events: p.events.map((e) => ({ id: e.id, name: e.name, venue: e.venue, start: e.startTime, end: e.endTime, endEstimated: e.endEstimated, source: e.source, evidence: e.evidence })),
     upcoming: p.upcoming.map((u) => ({ name: u.event.name, venue: u.event.venue, start: u.event.startTime, exitPeakAt: u.exitPeakAt })),
     coverageGaps: p.coverageGaps,
+    occupancy: {
+      route: p.occupancy.route,
+      vehicleId: p.occupancy.vehicleId,
+      category: p.occupancy.category,
+      raw: p.occupancy.raw,
+      passengerCount: p.occupancy.passengerCount,
+      status: p.occupancy.status,
+      message: p.occupancy.message,
+    },
   };
 }
 

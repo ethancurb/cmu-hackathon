@@ -72,6 +72,13 @@ export function describePlan(input: PlanInput, result: PlanResult): string {
   const p = result.pressure;
   if (p) {
     lines.push(`Transit Pressure at departure: ${LEVEL_WORD[p.current.level]}, ${p.current.score}/100 (model index, not occupancy; confidence ${p.current.confidence.toLowerCase()}).${p.surge ? ` Surge expected ${timeRange(p.surge.start, p.surge.end)}${p.surge.continues ? "+" : ""}.` : " No surge expected in the next 4 hours."}`);
+    if (p.occupancy.passengerCount !== null) {
+      lines.push(`People on the bus: ${p.occupancy.passengerCount} (live PRT count on ${p.occupancy.route} vehicle ${p.occupancy.vehicleId ?? "unknown"}).`);
+    } else if (p.occupancy.category) {
+      lines.push(`People on the bus: ${p.occupancy.raw ?? p.occupancy.category} (live occupancy · PRT category, not a headcount).`);
+    } else {
+      lines.push("People on the bus: not reported by PRT.");
+    }
     const top = p.current.reasons.slice(0, 2).map((r) => `${r.label} (+${r.contribution})`).join("; ");
     if (top) lines.push(`Why: ${top}.`);
     lines.push(`Advice: ${p.recommendation.label} — ${p.recommendation.detail}`);

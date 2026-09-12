@@ -2,7 +2,7 @@
 // These are documented heuristics, not measured PRT ridership statistics.
 // See docs/overnight-report.md "How Transit Pressure is calculated".
 
-export const MODEL_VERSION = "pressure-v2-heuristic";
+export const MODEL_VERSION = "pressure-v2-heuristic+occupancy";
 
 export const TIMEZONE = "America/New_York";
 
@@ -87,6 +87,14 @@ export const TRANSIT = {
   fadeMinutes: 60,
 } as const;
 
+export const OCCUPANCY = {
+  /** Heuristic points from PRT's category. Never derived from an invented headcount. */
+  points: { not_crowded: 0, somewhat_crowded: 8, crowded: 16 } as const,
+  max: 16,
+  fullMinutes: 15,
+  fadeMinutes: 60,
+} as const;
+
 export const SERVICE = {
   /** Gaps above this many minutes between scheduled departures start adding pressure. */
   gapFromMinutes: 15,
@@ -116,4 +124,4 @@ export const RECOMMENDATION = {
 } as const;
 
 export const COVERAGE_NOTE =
-  "Location-area model index (0–100), not a passenger count or an occupancy forecast. Event coverage is partial; weights and event durations are documented assumptions, not measured PRT ridership.";
+  "Location-area model index (0–100), not a passenger count or an occupancy forecast. Current 71B load is a separate live observation (PRT category, or a count only when PRT publishes one). Event coverage is partial; weights and event durations are documented assumptions, not measured PRT ridership.";

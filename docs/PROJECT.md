@@ -1,5 +1,11 @@
 # Product: predictive Transit Pressure
 
+## Decision 2026-09-12, live occupancy into the model (chosen by BigMike)
+
+Keep the #23 71B TrueTime/BusTime observation as the occupancy source and **feed it into Transit Pressure**. A current PRT category (or a published integer count, when one exists) is a named OCCUPANCY term on the current sample, fades with age, and is listed in freshness/confidence. Missing or unreported load lowers confidence and never becomes a fabricated headcount.
+
+The rider-facing label is **People on the bus**. When PRT publishes a count, show that number. Otherwise show the category (**Not crowded** / **Somewhat crowded** / **Crowded** / **Not reported**) and say it is a category, not a headcount. The 0–100 index remains a model index, not occupancy.
+
 ## Decision 2026-09-12, issue #24 (chosen by BigMike)
 
 The home visual switcher has two purposeful modes: **Map** and **Vehicle**. Remove the redundant List mode and keep the three live route-arrival tiles visible immediately below either visual surface, restoring the earlier scan order the user preferred. The tiles remain nearby-CMU context rather than a claim about the selected itinerary; no arrival, journey, crowding, or Transit Pressure contract changes.

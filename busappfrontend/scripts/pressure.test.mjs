@@ -5,6 +5,7 @@ import {
   predictPressure,
   buildPressure,
   eventInfluence,
+  occupancyReason,
   distanceKm,
   corridorDistanceKm,
   localParts,
@@ -88,6 +89,25 @@ test("weather: rain alone adds; event + rain > event alone; snow and storms add;
   none.weather = [];
   assert.ok(Number.isFinite(score(none)));
   assert.equal(predictPressure(none, none.generatedAt).reasons.some((r) => r.type === "WEATHER"), false);
+});
+
+test("live occupancy raises current pressure; missing load is omitted, not invented", () => {
+  const base = quiet();
+  assert.equal(base.occupancy.category, "not_crowded");
+  assert.equal(occupancyReason(base, base.generatedAt), null, "EMPTY/not crowded adds no invented headcount or points");
+  const crowded = quiet();
+  crowded.occupancy = { ...crowded.occupancy, category: "crowded", raw: "FULL" };
+  assert.ok(score(crowded) > score(base), "FULL raises the current index");
+  assert.ok(predictPressure(crowded, crowded.generatedAt).reasons.some((r) => r.type === "OCCUPANCY"));
+  const missing = quiet();
+  missing.occupancy = { ...missing.occupancy, category: null, raw: null, passengerCount: null, status: "UNAVAILABLE" };
+  missing.freshness = missing.freshness.map((f) => (f.source === "PRT occupancy" ? { ...f, status: "UNAVAILABLE" } : f));
+  assert.equal(score(missing), score(base));
+  assert.equal(predictPressure(missing, missing.generatedAt).reasons.some((r) => r.type === "OCCUPANCY"), false);
+  assert.ok(score(crowded, shift(crowded.generatedAt, 90)) < score(crowded), "occupancy evidence fades for later samples");
+  const result = buildPressure(crowded, crowded.generatedAt);
+  assert.equal(result.occupancy.passengerCount, null);
+  assert.equal(result.occupancy.category, "crowded");
 });
 
 test("service disruption adds risk; alerts weighted by effect; realtime evidence decays with age", () => {

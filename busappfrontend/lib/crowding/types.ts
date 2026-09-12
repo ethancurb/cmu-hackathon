@@ -16,6 +16,8 @@ export type CrowdingObservation = {
   etaLabel: string;
   passengerLoad: PassengerLoad | null;
   rawPassengerLoad: string | null;
+  /** Only when PRT publishes an integer count. Categories never become this number. */
+  passengerCount: number | null;
   /** TrueTime exposes no passenger-load measurement timestamp. */
   observedAt: null;
   /** Time our server fetched the source, not the load measurement time. */

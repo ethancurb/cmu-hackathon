@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { BufferGeometry, Group, Material, Mesh, Object3D, PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import type { ViewMode } from "@/lib/app-context";
+import { occupancyHeadline } from "@/lib/crowding/display";
+import type { OccupancyObservation } from "@/lib/pressure/types";
 import { bellowsFoldPose, revealParts } from "@/lib/vehicle-model";
 import { ViewToggle } from "./ViewToggle";
 
@@ -20,6 +22,7 @@ type RevealGroup = {
 type VehicleModelViewProps = {
   viewMode: ViewMode;
   onSetViewMode: (mode: ViewMode) => void;
+  occupancy?: OccupancyObservation | null;
 };
 
 function makeRevealGroup(node: Object3D | null | undefined): RevealGroup | null {
@@ -50,7 +53,7 @@ function disposeTree(root: Object3D) {
   });
 }
 
-export function VehicleModelView({ viewMode, onSetViewMode }: VehicleModelViewProps) {
+export function VehicleModelView({ viewMode, onSetViewMode, occupancy = null }: VehicleModelViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const modelRootRef = useRef<Group | null>(null);
@@ -313,9 +316,14 @@ export function VehicleModelView({ viewMode, onSetViewMode }: VehicleModelViewPr
         className={`relative h-full w-full touch-none outline-none transition-opacity duration-300 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue motion-reduce:transition-none ${status === "ready" ? "opacity-100" : "opacity-0"}`}
       />
 
-      <div className="pointer-events-none absolute left-[11px] top-[11px] max-w-[122px]">
+      <div className="pointer-events-none absolute left-[11px] top-[11px] max-w-[160px]">
         <p className="text-row-title font-bold text-ink-deep">XD60</p>
         <p className="text-footnote uppercase tracking-loud text-blue">interactive cutaway</p>
+        {occupancy ? (
+          <p className="mt-1 text-footnote font-bold text-ink-deep">
+            People on the bus · {occupancyHeadline(occupancy)}
+          </p>
+        ) : null}
       </div>
       <ViewToggle viewMode={viewMode} onChange={onSetViewMode} />
 

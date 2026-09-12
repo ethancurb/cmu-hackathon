@@ -32,6 +32,16 @@ export function normalizePassengerLoad(raw: unknown): PassengerLoad | null {
   return null;
 }
 
+/** Accepts only an explicit integer headcount. Category strings never become a count. */
+export function parsePassengerCount(raw: unknown): number | null {
+  if (typeof raw === "number" && Number.isInteger(raw) && raw >= 0 && raw <= 200) return raw;
+  if (typeof raw === "string" && /^\d+$/.test(raw.trim())) {
+    const value = Number(raw.trim());
+    return value >= 0 && value <= 200 ? value : null;
+  }
+  return null;
+}
+
 function eta(raw: string): { etaLabel: string; etaMinutes: number | null } {
   const value = raw.trim().toUpperCase();
   if (value === "DUE") return { etaLabel: "Due", etaMinutes: 0 };
@@ -44,6 +54,7 @@ function observation(input: {
   destination?: string | null;
   etaRaw?: string | null;
   passengerRaw?: unknown;
+  passengerCountRaw?: unknown;
   fetchedAt: string;
 }): CrowdingObservation {
   const rawPassengerLoad = typeof input.passengerRaw === "string" && input.passengerRaw.trim() ? input.passengerRaw.trim() : null;
@@ -58,6 +69,7 @@ function observation(input: {
     ...parsedEta,
     passengerLoad: normalizePassengerLoad(rawPassengerLoad),
     rawPassengerLoad,
+    passengerCount: parsePassengerCount(input.passengerCountRaw ?? input.passengerRaw),
     observedAt: null,
     fetchedAt: input.fetchedAt,
   };
@@ -109,6 +121,7 @@ export function parseBusTimeJson(payload: unknown, fetchedAt: string): CrowdingO
                 : `${prediction.prdctdn} MIN`
               : null,
         passengerRaw: prediction.psgld,
+        passengerCountRaw: prediction.psgcnt ?? prediction.psngr ?? prediction.passengers,
         fetchedAt,
       })
     )
@@ -124,6 +137,37 @@ function responseFor(observations: CrowdingObservation[], fetchedAt: string, sou
     return { status: "unknown", fetchedAt, observations, source, message: "PRT lists the bus but is not reporting its passenger-load category." };
   }
   return { status: "live", fetchedAt, observations, source, message: "Current categorical passenger-load observation from PRT." };
+}
+
+const CACHE_MS = 20_000;
+let cache: { at: number; value: CrowdingResponse } | null = null;
+let pending: Promise<CrowdingResponse> | null = null;
+
+function unavailableResponse(): CrowdingResponse {
+  return {
+    status: "unavailable",
+    fetchedAt: null,
+    observations: [],
+    source: process.env.PRT_API_KEY ? "PRT BusTime API" : "PRT TrueTime page",
+    message: "PRT passenger-load data is unavailable right now.",
+  };
+}
+
+/** One coalesced upstream read for /api/crowding and the pressure bundle. */
+export async function fetchCrowdingCached(): Promise<CrowdingResponse> {
+  if (cache && Date.now() - cache.at < CACHE_MS) return cache.value;
+  if (!pending) {
+    pending = fetchCrowding()
+      .then((value) => {
+        cache = { at: Date.now(), value };
+        return value;
+      })
+      .catch(() => unavailableResponse())
+      .finally(() => {
+        pending = null;
+      });
+  }
+  return pending;
 }
 
 export async function fetchCrowding(): Promise<CrowdingResponse> {

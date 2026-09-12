@@ -74,6 +74,27 @@ export type TransitSignal = {
 
 export type ScheduledDeparture = { at: string; routeId: string; stopId: string; directionId: string };
 
+/** Current onboard load for a specific vehicle. Category and count are never inferred from each other. */
+export type OccupancyCategory = "not_crowded" | "somewhat_crowded" | "crowded";
+export type OccupancyObservation = {
+  route: string;
+  direction: string | null;
+  stopId: string | null;
+  stopName: string | null;
+  vehicleId: string | null;
+  destination: string | null;
+  etaLabel: string | null;
+  category: OccupancyCategory | null;
+  raw: string | null;
+  /** Integer headcount only when the agency published one. */
+  passengerCount: number | null;
+  fetchedAt: string | null;
+  observedAt: string | null;
+  source: string | null;
+  status: SignalStatus;
+  message: string;
+};
+
 export type SignalBundle = {
   mode: "LIVE" | "DEMO";
   generatedAt: string;
@@ -84,11 +105,12 @@ export type SignalBundle = {
   events: EventSignal[];
   weather: WeatherSignal[];
   transit: TransitSignal;
+  occupancy: OccupancyObservation;
   departures: ScheduledDeparture[];
   freshness: DataFreshness[];
 };
 
-export type ReasonType = "TIME" | "EVENT" | "WEATHER" | "TRANSIT" | "SERVICE";
+export type ReasonType = "TIME" | "EVENT" | "WEATHER" | "TRANSIT" | "SERVICE" | "OCCUPANCY";
 export type DemandReason = {
   type: ReasonType;
   label: string;
@@ -166,6 +188,8 @@ export type PressureResult = {
   coverage: string;
   /** Causes this result cannot see. Absence of a listed cause is not evidence of quiet. */
   coverageGaps: string[];
+  /** Current vehicle load the model used (or an honest unknown). */
+  occupancy: OccupancyObservation;
   scenario?: string;
   stage?: number;
   stageLabel?: string;
