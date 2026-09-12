@@ -11,7 +11,7 @@ The problem comes from the team's experience of full buses passing waiting rider
 ## What the first version must prove
 
 1. **Correct bus:** resolve a Google-selected departure to a PRT vehicle and its current run. A route label such as 71D can describe several buses; do not attach one bus's load to every departure on that route.
-2. **Current capacity:** obtain actual occupancy data and show a visual capacity indicator with source and observation age. Show `passengers / total capacity` only when both are supported; use a reported percentage or category when that is what the source provides. Unknown remains unknown.
+2. **Current capacity:** obtain actual occupancy data and show a visual capacity indicator with source and observation age when known; distinguish feed update time from occupancy measurement time. Show `passengers / total capacity` only when both are supported; use a reported percentage or category when that is what the source provides. Unknown remains unknown.
 3. **Useful integration:** display the capacity card alongside the selected journey, preserving the existing walking/route/ETA information. Changing departures must select the corresponding vehicle's capacity. A route-input shortcut may be used for an early data demo; it does not prove Google integration.
 
 An opt-in phone tracker can help match a rider's movement to a bus and associate a report with that run. It observes participating devices, not all passengers. A unique bus ID references records; it does not inherently encode live occupancy or a verified rated capacity. See [the architecture](ARCHITECTURE.md) for the data distinctions.
@@ -41,7 +41,7 @@ City-wide routing, new arrival predictions, a second trip planner, pass-up repor
 
 ## Decisions and next evidence
 
-Recommended stack remains a small Next.js/TypeScript frontend/API; add shared Postgres persistence when reports or history require it. Data-source verification comes before provisioning extra infrastructure. The proposed contract and first feasibility check are in [ARCHITECTURE](ARCHITECTURE.md).
+Recommended stack remains a small Next.js/TypeScript frontend/API; add shared Postgres persistence when reports or history require it. Data-source verification comes before provisioning extra infrastructure. The developer guide's `getpredictions` can supply specific vehicle identity, ETA, and current crowding together; if populated by PRT, it removes the need for phone tracking in the first milestone. Displaying an existing feed alone offers limited differentiation: prove the capacity-based improvement to the rider's existing journey. The proposed contract, access/quota limits, and first feasibility check are in [ARCHITECTURE](ARCHITECTURE.md).
 
 Open technical facts: authenticated PRT sample, usable occupancy fields, verified per-vehicle capacity metadata if numeric ratios are desired, pilot departure/stop IDs, Google integration credentials, and forecast training/validation data. None is assumed available.
 

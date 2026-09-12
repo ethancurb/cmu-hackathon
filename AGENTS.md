@@ -20,9 +20,12 @@ Help four humans win a HackCMU track with a distinctive, working project. Strate
 
 - People choose work through the team's separate ticket system, which is being built by a teammate. This repo defines no standing roles, people-to-path assignments, or per-person handoff files. Do not create a competing task tracker.
 - Use the actual ticket system when its link/integration is supplied; do not invent its API. Until available, use your human's current task brief and coordinate collisions directly.
+- Before non-trivial implementation, read open tasks and write a short spec in the existing or new ticket: criterion/outcome, changed paths, contracts/dependencies, and verification. While the tracker is unavailable, use the current task brief. Resolve overlapping scope, files, or contracts with the affected people before editing.
+- Keep one shippable increment per ticket; split work larger than a few hours. Small in-scope refinements stay in the existing task. Changes to shared files, contracts, or entry points must be recorded and coordinated even when small.
+- Reference the ticket ID/link in commits and handoffs when available. Close completed work after integration with the change link and observed verification result. Keep updates to your own task; do not reassign another human's work without their agreement.
 - Use separate checkouts/worktrees and one active writer per file. Pause AI before manual edits; isolate ports/data where needed.
 - Reuse canonical types, examples, errors, and fixtures. Coordinate shared contracts, dependencies/lockfiles, migrations, entry points, environment names, and deployment through the affected tickets before simultaneous edits diverge.
-- Keep progress, blockers, completion evidence, and task reservations in the ticket system. After ten blocked minutes or two failed approaches, report the smallest useful request and continue independent work.
+- Keep progress, blockers, and task reservations in the ticket system. After ten blocked minutes or two failed approaches, report the smallest useful request and continue independent work.
 
 ## Finish verified increments
 

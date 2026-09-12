@@ -5,8 +5,8 @@ Target Traveling. **Three-minute presentation/demo; Google Form due September 12
 ## Three-minute proof
 
 - **0:00–0:20:** show the existing Google journey: origin, destination, route, walking time, and departure. State the missing question: how full is this specific bus?
-- **0:20–1:15:** reveal the matched PRT vehicle and current capacity card. Show the actual source and age. Numeric, percentage, and categorical displays must reflect the available data.
-- **1:15–1:55:** switch to another selected departure or show a fresh reading. Demonstrate that capacity follows the physical vehicle/run, including when two buses share a route label.
+- **0:20–1:15:** reveal the matched PRT vehicle and current capacity card. Show the actual source and measurement age when known; label feed updates separately and disclose unknown occupancy age. Numeric, percentage, and categorical displays must reflect the available data.
+- **1:15–1:55:** switch to another selected departure or show a newly reported reading. Demonstrate that capacity follows the physical vehicle/run, including when two buses share a route label.
 - **1:55–2:25:** show unknown/stale data or an ambiguous match. Explain the matching/data challenge. Demonstrate phone-assisted matching only if implemented; never describe phone count as total passengers.
 - **2:25–2:40:** explain the rider benefit and Traveling fit. A future-at-stop forecast is presented only if it exists and has supporting evaluation.
 - **2:40–3:00:** buffer and close.
