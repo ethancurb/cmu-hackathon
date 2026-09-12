@@ -5,17 +5,21 @@ import * as maplibregl from "maplibre-gl";
 import type { Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Badge } from "@/components/Badge";
-import { BusIcon } from "@/components/icons/filled";
+import { BusIcon, PinIcon } from "@/components/icons/filled";
 import type { RouteId } from "@/lib/mock-data";
 
 export type MapCanvasHandle = {
   flyTo: (lat: number, lng: number) => void;
 };
 
+export type Destination = { lat: number; lng: number } | null;
+
 type MapCanvasProps = {
   lat: number;
   lng: number;
   activeRouteId: RouteId;
+  destination?: Destination;
+  onNearestRoute?: (routeId: RouteId) => void;
   zoom?: number;
 };
 
@@ -36,6 +40,12 @@ const STYLE: StyleSpecification = {
         "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
       ],
       tileSize: 256,
+      // This service has no real imagery past z16 here — it returns a
+      // placeholder tile with "Map data not yet available" baked into the
+      // pixels instead of an error. Declaring the true max makes MapLibre
+      // overzoom (scale up) the last real tile for closer views rather
+      // than requesting one that doesn't exist.
+      maxzoom: 16,
       attribution: "Esri, HERE, Garmin, © OpenStreetMap contributors, and the GIS user community",
     },
   },
@@ -74,6 +84,7 @@ type RouteFeature = {
 // (North Side–Oakland–South Side) is a real bare route and comes within
 // ~600m, so it's used as-is. Flag if the team meant a different branch.
 const GTFS_ROUTE_ID: Record<RouteId, string> = { "71": "71D", "61": "61A", "54": "54" };
+const APP_ROUTE_IDS = Object.keys(GTFS_ROUTE_ID) as RouteId[];
 
 const INACTIVE_BADGE_CLASS: Record<RouteId, string> = {
   "71": "bg-border text-on-ink",
@@ -81,25 +92,64 @@ const INACTIVE_BADGE_CLASS: Record<RouteId, string> = {
   "54": "bg-bar text-blue",
 };
 
+/** Nearest of our three tracked routes to a point, by minimum distance to
+ * any vertex of its real geometry. A flat equirectangular approximation is
+ * fine here — points are all within a few km, and this only needs to rank
+ * three routes against each other, not report a real distance. */
+function nearestRouteId(lat: number, lng: number, shapes: RouteFeature[]): RouteId | null {
+  const cosLat = Math.cos((lat * Math.PI) / 180);
+  let best: RouteId | null = null;
+  let bestDist2 = Infinity;
+  for (const feature of shapes) {
+    const appRouteId = APP_ROUTE_IDS.find((id) => GTFS_ROUTE_ID[id] === feature.properties.routeId);
+    if (!appRouteId) continue;
+    for (const [pLng, pLat] of feature.geometry.coordinates) {
+      const dLat = lat - pLat;
+      const dLng = (lng - pLng) * cosLat;
+      const dist2 = dLat * dLat + dLng * dLng;
+      if (dist2 < bestDist2) {
+        bestDist2 = dist2;
+        best = appRouteId;
+      }
+    }
+  }
+  return best;
+}
+
 type Point = { x: number; y: number };
-type Projected = { paths: Partial<Record<RouteId, string>>; anchors: Partial<Record<RouteId, Point>>; origin: Point | null };
+type Projected = {
+  paths: Partial<Record<RouteId, string>>;
+  anchors: Partial<Record<RouteId, Point>>;
+  origin: Point | null;
+  destination: Point | null;
+};
 
 /** Static, non-interactive MapLibre backdrop centered on a real coordinate,
- * with real route lines and a real "you are here" marker projected onto it
- * by hand. Non-interactive on purpose: nothing here needs panning/zooming
- * for a small map card, and it keeps the projected overlay in sync with the
+ * with real route lines, a "you are here" marker, and (once a destination
+ * is searched) a real destination pin — all projected onto it by hand.
+ * Non-interactive on purpose: nothing here needs panning/zooming for a
+ * small map card, and it keeps the projected overlay in sync with the
  * basemap without having to re-project on every drag frame. Recentering
- * happens only via `flyTo` (wired to the "Locate me" button) or a
- * resolved-location update. */
+ * happens only via `flyTo` (wired to the "Locate me" button), a
+ * resolved-location update, or a newly picked destination (fits both
+ * points in view). */
 export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function MapCanvas(
-  { lat, lng, activeRouteId, zoom = 14 },
+  { lat, lng, activeRouteId, destination = null, onNearestRoute, zoom = 14 },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const shapesRef = useRef<RouteFeature[] | null>(null);
-  const [projected, setProjected] = useState<Projected>({ paths: {}, anchors: {}, origin: null });
+  const [projected, setProjected] = useState<Projected>({ paths: {}, anchors: {}, origin: null, destination: null });
   const [size, setSize] = useState({ w: 0, h: 0 });
+
+  // `recompute`/`onNearestRoute` are registered as MapLibre event handlers
+  // exactly once (see the mount effect below) and must not go stale across
+  // re-renders, so the latest props live in a ref rather than a closure —
+  // otherwise a `moveend` firing long after mount would re-project using
+  // whatever lat/lng/destination happened to be current at mount time.
+  const latestRef = useRef({ lat, lng, destination, onNearestRoute });
+  latestRef.current = { lat, lng, destination, onNearestRoute };
 
   useImperativeHandle(ref, () => ({
     flyTo: (nextLat, nextLng) => {
@@ -112,6 +162,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     const shapes = shapesRef.current;
     const container = containerRef.current;
     if (!map || !shapes || !container || !map.isStyleLoaded()) return;
+    const { lat: curLat, lng: curLng, destination: curDestination } = latestRef.current;
 
     const w = container.clientWidth;
     const h = container.clientHeight;
@@ -119,9 +170,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     const anchors: Projected["anchors"] = {};
 
     for (const feature of shapes) {
-      const appRouteId = (Object.keys(GTFS_ROUTE_ID) as RouteId[]).find(
-        (id) => GTFS_ROUTE_ID[id] === feature.properties.routeId
-      );
+      const appRouteId = APP_ROUTE_IDS.find((id) => GTFS_ROUTE_ID[id] === feature.properties.routeId);
       if (!appRouteId) continue;
 
       const screenPoints = feature.geometry.coordinates.map(([pLng, pLat]) => map.project([pLng, pLat]));
@@ -143,8 +192,14 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       anchors[appRouteId] = { x: best.x, y: best.y };
     }
 
-    const originPoint = map.project([lng, lat]);
-    setProjected({ paths, anchors, origin: { x: originPoint.x, y: originPoint.y } });
+    const originPoint = map.project([curLng, curLat]);
+    const destinationPoint = curDestination ? map.project([curDestination.lng, curDestination.lat]) : null;
+    setProjected({
+      paths,
+      anchors,
+      origin: { x: originPoint.x, y: originPoint.y },
+      destination: destinationPoint ? { x: destinationPoint.x, y: destinationPoint.y } : null,
+    });
   };
 
   useEffect(() => {
@@ -167,6 +222,11 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       .then((geojson: { features: RouteFeature[] }) => {
         shapesRef.current = geojson.features;
         recompute();
+        const pendingDestination = latestRef.current.destination;
+        if (pendingDestination) {
+          const nearest = nearestRouteId(pendingDestination.lat, pendingDestination.lng, geojson.features);
+          if (nearest) latestRef.current.onNearestRoute?.(nearest);
+        }
       })
       .catch(() => {
         // Route overlay stays empty (basemap alone still renders) rather
@@ -186,16 +246,41 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       map.remove();
       mapRef.current = null;
     };
-    // Initialize once; later position updates go through setCenter/flyTo
-    // below rather than tearing down and recreating the map instance.
+    // Initialize once; later position/destination updates go through
+    // setCenter/fitBounds below rather than tearing down and recreating the
+    // map instance. `recompute` reads fresh props via `latestRef`, not this
+    // closure, so it's safe for it to be stale here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // A resolved device location arriving after mount (geolocation is async)
-  // recenters the already-created map; `moveend` above re-projects onto it.
+  // recenters the already-created map; `moveend` above re-projects onto it
+  // using latestRef, so it picks up the new lat/lng correctly.
   useEffect(() => {
     mapRef.current?.setCenter([lng, lat]);
   }, [lat, lng]);
+
+  // A newly picked destination: fit both points in view (visibly "updates
+  // the route") and report which tracked route passes nearest to it. Keyed
+  // on the coordinate values, not object identity, so this doesn't refire
+  // on unrelated re-renders that happen to create a new destination object.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !destination) return;
+
+    const bounds = new maplibregl.LngLatBounds([lng, lat], [lng, lat]);
+    bounds.extend([destination.lng, destination.lat]);
+    map.fitBounds(bounds, { padding: 48, maxZoom: 16, duration: 800 });
+
+    const shapes = shapesRef.current;
+    if (shapes) {
+      const nearest = nearestRouteId(destination.lat, destination.lng, shapes);
+      if (nearest) onNearestRoute?.(nearest);
+    }
+    // Shapes not loaded yet: the fetch handler above checks latestRef for a
+    // pending destination once they arrive.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [destination?.lat, destination?.lng]);
 
   return (
     <div className="absolute inset-0" role="img" aria-label="Map centered on your current area">
@@ -203,7 +288,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
 
       {size.w > 0 ? (
         <svg className="absolute inset-0" width={size.w} height={size.h} viewBox={`0 0 ${size.w} ${size.h}`}>
-          {(Object.keys(GTFS_ROUTE_ID) as RouteId[]).map((routeId) => {
+          {APP_ROUTE_IDS.map((routeId) => {
             const d = projected.paths[routeId];
             if (!d) return null;
             const active = routeId === activeRouteId;
@@ -225,7 +310,14 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         </svg>
       ) : null}
 
-      {(Object.keys(GTFS_ROUTE_ID) as RouteId[]).map((routeId) => {
+      {projected.destination ? (
+        <PinIcon
+          className="absolute h-4 w-4 -translate-x-1/2 -translate-y-full"
+          style={{ left: projected.destination.x, top: projected.destination.y }}
+        />
+      ) : null}
+
+      {APP_ROUTE_IDS.map((routeId) => {
         const anchor = projected.anchors[routeId];
         if (!anchor) return null;
         const active = routeId === activeRouteId;

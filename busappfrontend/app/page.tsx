@@ -13,6 +13,8 @@ import { RouteListView } from "./RouteListView";
 import { ArrivalCards } from "./ArrivalCards";
 import { useAppState } from "@/lib/app-context";
 import { ROUTES } from "@/lib/mock-data";
+import type { AddressResult } from "@/lib/geocode";
+import type { Destination } from "./MapCanvas";
 
 export default function HomePage() {
   const router = useRouter();
@@ -22,6 +24,10 @@ export default function HomePage() {
   // Location editing isn't part of the shared app state (not in the STATE
   // list) — it's purely local to this screen.
   const [location, setLocation] = useState("Morewood Avenue");
+  // Only set once a real address is picked from the search dropdown — the
+  // map falls back to its fixed decorative pin until then rather than
+  // guessing a coordinate for freehand text.
+  const [destination, setDestination] = useState<Destination>(null);
 
   const selectedRoute = ROUTES.find((r) => r.id === selectedRouteId)!;
 
@@ -30,7 +36,11 @@ export default function HomePage() {
       <NavBar menuDisabled />
 
       <div className="mt-4 px-gutter">
-        <LocationField value={location} onChange={setLocation} />
+        <LocationField
+          value={location}
+          onChange={setLocation}
+          onSelectAddress={(address: AddressResult) => setDestination({ lat: address.lat, lng: address.lng })}
+        />
       </div>
 
       <div className="mt-[14px]">
@@ -41,6 +51,8 @@ export default function HomePage() {
         {viewMode === "map" ? (
           <RouteMap
             activeRouteId={selectedRouteId}
+            onSelectRoute={setSelectedRouteId}
+            destination={destination}
             weatherDismissed={weatherDismissed}
             onDismissWeather={dismissWeather}
             viewMode={viewMode}

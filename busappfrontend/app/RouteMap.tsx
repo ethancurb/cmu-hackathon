@@ -9,7 +9,7 @@ import type { ViewMode } from "@/lib/app-context";
 import { useDeviceLocation } from "@/lib/geolocation";
 import { useWeather } from "@/lib/weather";
 import { ViewToggle } from "./ViewToggle";
-import { MapCanvas, type MapCanvasHandle } from "./MapCanvas";
+import { MapCanvas, type Destination, type MapCanvasHandle } from "./MapCanvas";
 
 const MAP_HEIGHT = 340;
 const INSET = 11; // 8px spec value × 1.354
@@ -25,13 +25,23 @@ const ROUTE_FOCUS_OFFSET: Record<RouteId, { x: number; y: number }> = {
 
 type RouteMapProps = {
   activeRouteId: RouteId;
+  onSelectRoute: (id: RouteId) => void;
+  destination: Destination;
   weatherDismissed: boolean;
   onDismissWeather: () => void;
   viewMode: ViewMode;
   onSetViewMode: (mode: ViewMode) => void;
 };
 
-export function RouteMap({ activeRouteId, weatherDismissed, onDismissWeather, viewMode, onSetViewMode }: RouteMapProps) {
+export function RouteMap({
+  activeRouteId,
+  onSelectRoute,
+  destination,
+  weatherDismissed,
+  onDismissWeather,
+  viewMode,
+  onSetViewMode,
+}: RouteMapProps) {
   const location = useDeviceLocation();
   const weather = useWeather(location.lat, location.lng);
   const mapRef = useRef<MapCanvasHandle>(null);
@@ -64,20 +74,31 @@ export function RouteMap({ activeRouteId, weatherDismissed, onDismissWeather, vi
         className="absolute inset-0 motion-reduce:transition-none motion-reduce:duration-0"
         style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, transition: "transform 200ms ease-out" }}
       >
-        <MapCanvas ref={mapRef} lat={location.lat} lng={location.lng} activeRouteId={activeRouteId} />
+        <MapCanvas
+          ref={mapRef}
+          lat={location.lat}
+          lng={location.lng}
+          activeRouteId={activeRouteId}
+          destination={destination}
+          onNearestRoute={onSelectRoute}
+        />
 
         {/* Destination: the shared PinIcon glyph, not a plain SVG circle.
-            Decorative/fixed — unlike the routes and origin marker (both now
-            projected from real coordinates in MapCanvas), there's no real
-            geocoded destination in this mock yet. */}
-        <PinIcon className="absolute h-4 w-4 -translate-x-1/2 -translate-y-full" style={{ left: 296, top: 150 }} />
+            Fixed/decorative default until a real address is searched — once
+            `destination` is set, MapCanvas draws the real geocoded pin
+            instead, so this placeholder steps aside rather than doubling up. */}
+        {!destination ? (
+          <>
+            <PinIcon className="absolute h-4 w-4 -translate-x-1/2 -translate-y-full" style={{ left: 296, top: 150 }} />
+            <span className="absolute text-label text-blue" style={{ left: 260, top: 168 }}>
+              Morewood Avenue
+            </span>
+          </>
+        ) : null}
 
-        {/* Map annotations: destination name and neighborhood labels, as shown
-            directly on the reference map. Sized with the generic (unsolved,
-            provisional) label token — no target string was measured for these. */}
-        <span className="absolute text-label text-blue" style={{ left: 260, top: 168 }}>
-          Morewood Avenue
-        </span>
+        {/* Map annotations: neighborhood labels, as shown directly on the
+            reference map. Sized with the generic (unsolved, provisional)
+            label token — no target string was measured for these. */}
         <span className="absolute text-label text-blue" style={{ left: INSET, bottom: 60 }}>
           Oakland
         </span>
