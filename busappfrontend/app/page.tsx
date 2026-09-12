@@ -166,7 +166,7 @@ export default function HomePage() {
       <div className="mt-4 flex flex-col gap-2 px-gutter">
         <div>
           <span className="text-footnote text-blue opacity-footnote">From</span>
-          <LocationField value={originLabel} onSelectAddress={handleSelectOrigin} />
+          <LocationField value={originLabel} onSelectAddress={handleSelectOrigin} near={origin} />
           {!scenario && device.source === "fallback" && !manualOrigin ? (
             <p className="mt-1 text-footnote text-blue opacity-footnote">Device location unavailable or denied. Starting from Carnegie Mellon; edit the field to set your real start.</p>
           ) : null}
@@ -178,7 +178,7 @@ export default function HomePage() {
         </div>
         <div>
           <span className="text-footnote text-blue opacity-footnote">To</span>
-          <LocationField value={destinationLabel} onSelectAddress={handleSelectDestination} />
+          <LocationField value={destinationLabel} onSelectAddress={handleSelectDestination} near={origin} />
         </div>
       </div>
 

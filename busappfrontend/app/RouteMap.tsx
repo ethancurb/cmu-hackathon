@@ -9,11 +9,18 @@ import type { ViewMode } from "@/lib/app-context";
 import type { Journey } from "@/lib/journey/types";
 import { useDeviceLocation } from "@/lib/geolocation";
 import { useWeather } from "@/lib/weather";
+import { useVehiclePositions } from "@/lib/use-vehicle-positions";
+import { GTFS_ROUTE_ID } from "@/lib/prt-routes";
 import { ViewToggle } from "./ViewToggle";
 import { MapCanvas, type Destination, type EventMarker, type MapCanvasHandle } from "./MapCanvas";
 
 const MAP_HEIGHT = 340;
 const INSET = 11; // 8px spec value × 1.354
+
+// The three tracked routes' real GTFS route ids — polled for live vehicle
+// positions whenever no itinerary is selected (matches the tracked route
+// lines MapCanvas draws in that same state).
+const TRACKED_GTFS_ROUTES = Object.values(GTFS_ROUTE_ID).join(",");
 
 const FOCUS_RING = "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 
@@ -76,6 +83,12 @@ export function RouteMap({
   const weather = weatherOverride ? { ...weatherOverride, loading: false, error: false } : liveWeather;
   const mapRef = useRef<MapCanvasHandle>(null);
 
+  // Once a real itinerary is selected, live vehicles for its own bus/rail
+  // legs are more useful than the three tracked routes (which have already
+  // stepped aside on the map at that point).
+  const journeyRouteIds = journey ? [...new Set(journey.legs.filter((l) => l.mode !== "WALK" && l.routeShortName).map((l) => l.routeShortName as string))].join(",") : "";
+  const vehicles = useVehiclePositions(journey ? journeyRouteIds : TRACKED_GTFS_ROUTES);
+
   return (
     <div
       className="relative w-full overflow-hidden rounded border border-border-soft bg-surface"
@@ -90,6 +103,7 @@ export function RouteMap({
           destination={destination}
           eventMarker={eventMarker}
           journey={journey}
+          vehicles={vehicles}
           onNearestRoute={onSelectRoute}
         />
       </div>

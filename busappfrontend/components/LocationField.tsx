@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PinIcon } from "@/components/icons/filled";
 import { PencilIcon } from "@/components/icons/stroked";
-import { useAddressSearch, type AddressResult } from "@/lib/geocode";
+import { useAddressSearch, type AddressResult, type NearPoint } from "@/lib/geocode";
 
 type LocationFieldProps = {
   value: string;
@@ -12,7 +12,14 @@ type LocationFieldProps = {
    * keystroke) — callers that care about map/route updates should key off
    * this, not `onChange`. */
   onSelectAddress?: (address: AddressResult) => void;
+  /** Rider's current origin — results are ranked and labeled by distance
+   * from here rather than from a fixed city-wide bias point. */
+  near?: NearPoint;
 };
+
+function formatDistance(mi: number): string {
+  return mi < 0.1 ? "<0.1 mi" : `${mi.toFixed(mi < 10 ? 1 : 0)} mi`;
+}
 
 const FOCUS_RING = "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 
@@ -24,11 +31,11 @@ const FOCUS_RING = "outline-none focus-visible:outline-2 focus-visible:outline-o
  * (Photon, key-free) below the field; picking a suggestion commits its
  * label as the value and reports the real coordinate via onSelectAddress.
  */
-export function LocationField({ value, onChange, onSelectAddress }: LocationFieldProps) {
+export function LocationField({ value, onChange, onSelectAddress, near }: LocationFieldProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [highlighted, setHighlighted] = useState(0);
-  const { results, loading } = useAddressSearch(editing ? draft : "");
+  const { results, loading } = useAddressSearch(editing ? draft : "", near);
 
   function commitText() {
     setEditing(false);
@@ -127,15 +134,18 @@ export function LocationField({ value, onChange, onSelectAddress }: LocationFiel
                   e.preventDefault();
                   selectAddress(r);
                 }}
-                className={`block w-full border-b border-rule px-4 py-3 text-left text-body last:border-b-0 ${
+                className={`flex w-full items-baseline justify-between gap-3 border-b border-rule px-4 py-3 text-left text-body last:border-b-0 ${
                   i === highlighted ? "bg-page" : ""
                 } text-blue`}
               >
-                {r.label}
+                <span className="min-w-0 truncate">{r.label}</span>
+                {r.distanceMi !== null ? (
+                  <span className="shrink-0 text-footnote opacity-footnote">{formatDistance(r.distanceMi)}</span>
+                ) : null}
               </button>
             ))
           )}
-          <div className="px-4 py-1 text-footnote text-blue opacity-footnote">Search by Photon · © OpenStreetMap contributors</div>
+          <div className="px-4 py-1 text-footnote text-blue opacity-footnote">Search by Photon · closest first · © OpenStreetMap contributors</div>
         </div>
       ) : null}
     </div>

@@ -9,6 +9,7 @@ import { BusIcon, PinIcon } from "@/components/icons/filled";
 import type { RouteId } from "@/lib/mock-data";
 import { GTFS_ROUTE_ID } from "@/lib/prt-routes";
 import type { Journey, LatLng } from "@/lib/journey/types";
+import type { VehiclePosition } from "@/lib/use-vehicle-positions";
 
 export type MapCanvasHandle = {
   flyTo: (lat: number, lng: number) => void;
@@ -29,6 +30,9 @@ type MapCanvasProps = {
   eventMarker?: EventMarker;
   /** The selected provider-backed itinerary; drawn leg by leg when present. */
   journey?: Journey | null;
+  /** Live PRT GPS positions for the routes currently relevant on screen —
+   * real reported positions, never occupancy. */
+  vehicles?: VehiclePosition[];
   onNearestRoute?: (routeId: RouteId) => void;
   zoom?: number;
 };
@@ -104,6 +108,7 @@ function nearestRouteId(lat: number, lng: number, shapes: RouteFeature[]): Route
 
 type Point = { x: number; y: number };
 type ProjectedLeg = { path: string; mode: "WALK" | "TRANSIT"; board: Point | null; alight: Point | null; label: string | null };
+type ProjectedVehicle = Point & { id: string; routeId: string; ageSeconds: number };
 type Projected = {
   paths: Partial<Record<RouteId, string>>;
   anchors: Partial<Record<RouteId, Point>>;
@@ -111,9 +116,10 @@ type Projected = {
   destination: Point | null;
   event: Point | null;
   legs: ProjectedLeg[];
+  vehicles: ProjectedVehicle[];
 };
 
-const EMPTY: Projected = { paths: {}, anchors: {}, origin: null, destination: null, event: null, legs: [] };
+const EMPTY: Projected = { paths: {}, anchors: {}, origin: null, destination: null, event: null, legs: [], vehicles: [] };
 
 function journeyPoints(journey: Journey): LatLng[] {
   return journey.legs.flatMap((leg) => leg.geometry);
@@ -129,7 +135,7 @@ function journeyPoints(journey: Journey): LatLng[] {
  * changes — never on a data refresh — so exploring is not interrupted.
  */
 export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function MapCanvas(
-  { lat, lng, activeRouteId, destination = null, eventMarker = null, journey = null, onNearestRoute, zoom = 14 },
+  { lat, lng, activeRouteId, destination = null, eventMarker = null, journey = null, vehicles = [], onNearestRoute, zoom = 14 },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -140,8 +146,8 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
   const [size, setSize] = useState({ w: 0, h: 0 });
 
   // MapLibre handlers are registered once; they read the latest props from a ref.
-  const latestRef = useRef({ lat, lng, destination, eventMarker, journey, onNearestRoute });
-  latestRef.current = { lat, lng, destination, eventMarker, journey, onNearestRoute };
+  const latestRef = useRef({ lat, lng, destination, eventMarker, journey, vehicles, onNearestRoute });
+  latestRef.current = { lat, lng, destination, eventMarker, journey, vehicles, onNearestRoute };
 
   const fitTo = (points: LatLng[]) => {
     const map = mapRef.current;
@@ -174,7 +180,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     const map = mapRef.current;
     const container = containerRef.current;
     if (!map || !container || !map.isStyleLoaded()) return;
-    const { lat: curLat, lng: curLng, destination: curDestination, eventMarker: curEvent, journey: curJourney } = latestRef.current;
+    const { lat: curLat, lng: curLng, destination: curDestination, eventMarker: curEvent, journey: curJourney, vehicles: curVehicles } = latestRef.current;
     const shapes = shapesRef.current ?? [];
 
     const w = container.clientWidth;
@@ -221,6 +227,10 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     const originPoint = map.project([curLng, curLat]);
     const destinationPoint = curDestination ? map.project([curDestination.lng, curDestination.lat]) : null;
     const eventPoint = curEvent ? map.project([curEvent.lng, curEvent.lat]) : null;
+    const vehiclePoints = curVehicles.map((v) => {
+      const p = map.project([v.lng, v.lat]);
+      return { x: p.x, y: p.y, id: v.id, routeId: v.routeId, ageSeconds: v.ageSeconds };
+    });
     setProjected({
       paths,
       anchors,
@@ -228,6 +238,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       destination: destinationPoint ? { x: destinationPoint.x, y: destinationPoint.y } : null,
       event: eventPoint ? { x: eventPoint.x, y: eventPoint.y } : null,
       legs,
+      vehicles: vehiclePoints,
     });
   };
 
@@ -311,6 +322,14 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     recompute();
   }, [eventMarker?.lat, eventMarker?.lng]);
 
+  // Vehicles move between polls without the camera moving; a plain array
+  // identity check would miss in-place position updates, so key off a
+  // cheap fingerprint of what actually changes.
+  const vehiclesKey = vehicles.map((v) => `${v.id}:${v.lat.toFixed(5)},${v.lng.toFixed(5)}`).join("|");
+  useEffect(() => {
+    recompute();
+  }, [vehiclesKey]);
+
   // A newly picked destination (without a journey yet): fit both points and
   // report which tracked route passes nearest to it.
   useEffect(() => {
@@ -375,6 +394,12 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
               </g>
             ) : null,
           )}
+          {projected.vehicles.map((v) => (
+            <g key={v.id}>
+              <title>{`Route ${v.routeId} · live GPS position · updated ${v.ageSeconds}s ago`}</title>
+              <circle cx={v.x} cy={v.y} r={6} fill="var(--ink-deep)" stroke="var(--surface)" strokeWidth={2} />
+            </g>
+          ))}
           {projected.origin ? (
             <circle cx={projected.origin.x} cy={projected.origin.y} r={7} fill="var(--surface)" stroke="var(--blue)" strokeWidth={3} />
           ) : null}
