@@ -1,0 +1,744 @@
+{
+  "generatedFrom": "busappfrontend/data/fixture.ts",
+  "note": "Authored demo data. Not real PRT observations. Stop IDs are stpid-shaped placeholders.",
+  "serviceDate": "2026-09-12",
+  "timelineStart": "2026-09-12T12:00:00.000Z",
+  "counts": {
+    "stops": 10,
+    "runs": 6,
+    "stopEvents": 30
+  },
+  "stops": [
+    {
+      "stopId": "7101",
+      "name": "Fifth Ave & Aiken Ave",
+      "lat": 40.4553,
+      "lng": -79.9298,
+      "routesServing": [
+        "71D",
+        "71B"
+      ]
+    },
+    {
+      "stopId": "7102",
+      "name": "Fifth Ave & Negley Ave",
+      "lat": 40.4548,
+      "lng": -79.9343,
+      "routesServing": [
+        "71D",
+        "71B"
+      ]
+    },
+    {
+      "stopId": "7103",
+      "name": "Fifth Ave & Amberson Ave",
+      "lat": 40.4541,
+      "lng": -79.9389,
+      "routesServing": [
+        "71D"
+      ]
+    },
+    {
+      "stopId": "7104",
+      "name": "Fifth Ave & Neville St",
+      "lat": 40.4525,
+      "lng": -79.9468,
+      "routesServing": [
+        "71D",
+        "71B"
+      ]
+    },
+    {
+      "stopId": "7105",
+      "name": "Fifth Ave & Morewood Ave",
+      "lat": 40.4517,
+      "lng": -79.9506,
+      "routesServing": [
+        "71D",
+        "71B"
+      ]
+    },
+    {
+      "stopId": "7106",
+      "name": "Centre Ave & Melwood Ave",
+      "lat": 40.4522,
+      "lng": -79.9585,
+      "routesServing": [
+        "71A",
+        "71C"
+      ]
+    },
+    {
+      "stopId": "7107",
+      "name": "Centre Ave & Cypress St",
+      "lat": 40.4547,
+      "lng": -79.9503,
+      "routesServing": [
+        "71A"
+      ]
+    },
+    {
+      "stopId": "7108",
+      "name": "Centre Ave & Millvale Ave",
+      "lat": 40.4561,
+      "lng": -79.9462,
+      "routesServing": [
+        "71A",
+        "71C"
+      ]
+    },
+    {
+      "stopId": "7109",
+      "name": "Centre Ave & Craig St",
+      "lat": 40.4529,
+      "lng": -79.9525,
+      "routesServing": [
+        "71A"
+      ]
+    },
+    {
+      "stopId": "7110",
+      "name": "Craig St & Plaza Dr",
+      "lat": 40.4487,
+      "lng": -79.9509,
+      "routesServing": [
+        "71A",
+        "71C"
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "runKey": "mock:71D:v9001:trip-a:2026-09-12",
+      "routeLabel": "71D",
+      "vehicleId": "9001",
+      "tripId": "trip-a",
+      "serviceDate": "2026-09-12",
+      "totalCapacity": 60,
+      "stopSequence": [
+        "7101",
+        "7102",
+        "7103",
+        "7104",
+        "7105"
+      ]
+    },
+    {
+      "runKey": "mock:71D:v9002:trip-b:2026-09-12",
+      "routeLabel": "71D",
+      "vehicleId": "9002",
+      "tripId": "trip-b",
+      "serviceDate": "2026-09-12",
+      "totalCapacity": 60,
+      "stopSequence": [
+        "7101",
+        "7102",
+        "7103",
+        "7104",
+        "7105"
+      ]
+    },
+    {
+      "runKey": "mock:71D:v9003:trip-c:2026-09-12",
+      "routeLabel": "71D",
+      "vehicleId": "9003",
+      "tripId": "trip-c",
+      "serviceDate": "2026-09-12",
+      "totalCapacity": 60,
+      "stopSequence": [
+        "7101",
+        "7102",
+        "7103",
+        "7104",
+        "7105"
+      ]
+    },
+    {
+      "runKey": "mock:71A:v9101:trip-a:2026-09-12",
+      "routeLabel": "71A",
+      "vehicleId": "9101",
+      "tripId": "trip-a",
+      "serviceDate": "2026-09-12",
+      "totalCapacity": 60,
+      "stopSequence": [
+        "7106",
+        "7107",
+        "7108",
+        "7109",
+        "7110"
+      ]
+    },
+    {
+      "runKey": "mock:71A:v9102:trip-b:2026-09-12",
+      "routeLabel": "71A",
+      "vehicleId": "9102",
+      "tripId": "trip-b",
+      "serviceDate": "2026-09-12",
+      "totalCapacity": 60,
+      "stopSequence": [
+        "7106",
+        "7107",
+        "7108",
+        "7109",
+        "7110"
+      ]
+    },
+    {
+      "runKey": "mock:71A:v9103:trip-c:2026-09-12",
+      "routeLabel": "71A",
+      "vehicleId": "9103",
+      "tripId": "trip-c",
+      "serviceDate": "2026-09-12",
+      "totalCapacity": 60,
+      "stopSequence": [
+        "7106",
+        "7107",
+        "7108",
+        "7109",
+        "7110"
+      ]
+    }
+  ],
+  "stopEvents": [
+    {
+      "arrivalAt": "2026-09-12T12:00:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9001:trip-a:2026-09-12",
+        "stopId": "7101",
+        "routeLabel": "71D",
+        "vehicleId": "9001",
+        "source": "mock"
+      },
+      "boardings": 14,
+      "alightings": 0,
+      "occupancyAfter": 14,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:00:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:00:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:03:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9001:trip-a:2026-09-12",
+        "stopId": "7102",
+        "routeLabel": "71D",
+        "vehicleId": "9001",
+        "source": "mock"
+      },
+      "boardings": 19,
+      "alightings": 2,
+      "occupancyAfter": 31,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:03:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:03:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:06:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9001:trip-a:2026-09-12",
+        "stopId": "7103",
+        "routeLabel": "71D",
+        "vehicleId": "9001",
+        "source": "mock"
+      },
+      "boardings": 16,
+      "alightings": 1,
+      "occupancyAfter": 46,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:06:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:06:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:09:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9001:trip-a:2026-09-12",
+        "stopId": "7104",
+        "routeLabel": "71D",
+        "vehicleId": "9001",
+        "source": "mock"
+      },
+      "boardings": 11,
+      "alightings": 2,
+      "occupancyAfter": 55,
+      "totalCapacity": 60,
+      "psgldCategory": "full",
+      "psgldProviderValue": "FULL",
+      "observedAt": "2026-09-12T12:09:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:09:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:12:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9001:trip-a:2026-09-12",
+        "stopId": "7105",
+        "routeLabel": "71D",
+        "vehicleId": "9001",
+        "source": "mock"
+      },
+      "boardings": 4,
+      "alightings": 3,
+      "occupancyAfter": 56,
+      "totalCapacity": 60,
+      "psgldCategory": "full",
+      "psgldProviderValue": "FULL",
+      "observedAt": "2026-09-12T12:12:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:12:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:08:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9002:trip-b:2026-09-12",
+        "stopId": "7101",
+        "routeLabel": "71D",
+        "vehicleId": "9002",
+        "source": "mock"
+      },
+      "boardings": 8,
+      "alightings": 0,
+      "occupancyAfter": 8,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:08:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:08:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:11:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9002:trip-b:2026-09-12",
+        "stopId": "7102",
+        "routeLabel": "71D",
+        "vehicleId": "9002",
+        "source": "mock"
+      },
+      "boardings": 9,
+      "alightings": 1,
+      "occupancyAfter": 16,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:11:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:11:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:14:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9002:trip-b:2026-09-12",
+        "stopId": "7103",
+        "routeLabel": "71D",
+        "vehicleId": "9002",
+        "source": "mock"
+      },
+      "boardings": 7,
+      "alightings": 2,
+      "occupancyAfter": 21,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:14:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:14:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:17:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9002:trip-b:2026-09-12",
+        "stopId": "7104",
+        "routeLabel": "71D",
+        "vehicleId": "9002",
+        "source": "mock"
+      },
+      "boardings": 6,
+      "alightings": 3,
+      "occupancyAfter": 24,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:17:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:17:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:20:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9002:trip-b:2026-09-12",
+        "stopId": "7105",
+        "routeLabel": "71D",
+        "vehicleId": "9002",
+        "source": "mock"
+      },
+      "boardings": 5,
+      "alightings": 4,
+      "occupancyAfter": 25,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:20:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:20:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:16:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9003:trip-c:2026-09-12",
+        "stopId": "7101",
+        "routeLabel": "71D",
+        "vehicleId": "9003",
+        "source": "mock"
+      },
+      "boardings": 4,
+      "alightings": 0,
+      "occupancyAfter": 4,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:16:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:16:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:19:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9003:trip-c:2026-09-12",
+        "stopId": "7102",
+        "routeLabel": "71D",
+        "vehicleId": "9003",
+        "source": "mock"
+      },
+      "boardings": 3,
+      "alightings": 1,
+      "occupancyAfter": 6,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:19:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:19:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:22:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9003:trip-c:2026-09-12",
+        "stopId": "7103",
+        "routeLabel": "71D",
+        "vehicleId": "9003",
+        "source": "mock"
+      },
+      "boardings": 5,
+      "alightings": 1,
+      "occupancyAfter": 10,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:22:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:22:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:25:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9003:trip-c:2026-09-12",
+        "stopId": "7104",
+        "routeLabel": "71D",
+        "vehicleId": "9003",
+        "source": "mock"
+      },
+      "boardings": 2,
+      "alightings": 2,
+      "occupancyAfter": 10,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:25:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:25:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:28:00.000Z",
+      "metadata": {
+        "runId": "mock:71D:v9003:trip-c:2026-09-12",
+        "stopId": "7105",
+        "routeLabel": "71D",
+        "vehicleId": "9003",
+        "source": "mock"
+      },
+      "boardings": 3,
+      "alightings": 1,
+      "occupancyAfter": 12,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:28:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:28:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:02:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9101:trip-a:2026-09-12",
+        "stopId": "7106",
+        "routeLabel": "71A",
+        "vehicleId": "9101",
+        "source": "mock"
+      },
+      "boardings": 12,
+      "alightings": 0,
+      "occupancyAfter": 12,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:02:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:02:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:05:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9101:trip-a:2026-09-12",
+        "stopId": "7107",
+        "routeLabel": "71A",
+        "vehicleId": "9101",
+        "source": "mock"
+      },
+      "boardings": 14,
+      "alightings": 1,
+      "occupancyAfter": 25,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:05:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:05:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:08:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9101:trip-a:2026-09-12",
+        "stopId": "7108",
+        "routeLabel": "71A",
+        "vehicleId": "9101",
+        "source": "mock"
+      },
+      "boardings": 13,
+      "alightings": 2,
+      "occupancyAfter": 36,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:08:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:08:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:11:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9101:trip-a:2026-09-12",
+        "stopId": "7109",
+        "routeLabel": "71A",
+        "vehicleId": "9101",
+        "source": "mock"
+      },
+      "boardings": 10,
+      "alightings": 3,
+      "occupancyAfter": 43,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:11:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:11:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:14:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9101:trip-a:2026-09-12",
+        "stopId": "7110",
+        "routeLabel": "71A",
+        "vehicleId": "9101",
+        "source": "mock"
+      },
+      "boardings": 6,
+      "alightings": 5,
+      "occupancyAfter": 44,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:14:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:14:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:10:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9102:trip-b:2026-09-12",
+        "stopId": "7106",
+        "routeLabel": "71A",
+        "vehicleId": "9102",
+        "source": "mock"
+      },
+      "boardings": 6,
+      "alightings": 0,
+      "occupancyAfter": 6,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:10:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:10:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:13:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9102:trip-b:2026-09-12",
+        "stopId": "7107",
+        "routeLabel": "71A",
+        "vehicleId": "9102",
+        "source": "mock"
+      },
+      "boardings": 5,
+      "alightings": 1,
+      "occupancyAfter": 10,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:13:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:13:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:16:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9102:trip-b:2026-09-12",
+        "stopId": "7108",
+        "routeLabel": "71A",
+        "vehicleId": "9102",
+        "source": "mock"
+      },
+      "boardings": 7,
+      "alightings": 1,
+      "occupancyAfter": 16,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:16:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:16:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:19:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9102:trip-b:2026-09-12",
+        "stopId": "7109",
+        "routeLabel": "71A",
+        "vehicleId": "9102",
+        "source": "mock"
+      },
+      "boardings": 4,
+      "alightings": 2,
+      "occupancyAfter": 18,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:19:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:19:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:22:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9102:trip-b:2026-09-12",
+        "stopId": "7110",
+        "routeLabel": "71A",
+        "vehicleId": "9102",
+        "source": "mock"
+      },
+      "boardings": 3,
+      "alightings": 3,
+      "occupancyAfter": 18,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:22:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:22:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:18:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9103:trip-c:2026-09-12",
+        "stopId": "7106",
+        "routeLabel": "71A",
+        "vehicleId": "9103",
+        "source": "mock"
+      },
+      "boardings": 9,
+      "alightings": 0,
+      "occupancyAfter": 9,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:18:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:18:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:21:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9103:trip-c:2026-09-12",
+        "stopId": "7107",
+        "routeLabel": "71A",
+        "vehicleId": "9103",
+        "source": "mock"
+      },
+      "boardings": 11,
+      "alightings": 1,
+      "occupancyAfter": 19,
+      "totalCapacity": 60,
+      "psgldCategory": "low",
+      "psgldProviderValue": "EMPTY",
+      "observedAt": "2026-09-12T12:21:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:21:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:24:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9103:trip-c:2026-09-12",
+        "stopId": "7108",
+        "routeLabel": "71A",
+        "vehicleId": "9103",
+        "source": "mock"
+      },
+      "boardings": 12,
+      "alightings": 2,
+      "occupancyAfter": 29,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:24:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:24:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:27:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9103:trip-c:2026-09-12",
+        "stopId": "7109",
+        "routeLabel": "71A",
+        "vehicleId": "9103",
+        "source": "mock"
+      },
+      "boardings": 8,
+      "alightings": 3,
+      "occupancyAfter": 34,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:27:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:27:00.000Z"
+    },
+    {
+      "arrivalAt": "2026-09-12T12:30:00.000Z",
+      "metadata": {
+        "runId": "mock:71A:v9103:trip-c:2026-09-12",
+        "stopId": "7110",
+        "routeLabel": "71A",
+        "vehicleId": "9103",
+        "source": "mock"
+      },
+      "boardings": 5,
+      "alightings": 4,
+      "occupancyAfter": 35,
+      "totalCapacity": 60,
+      "psgldCategory": "some_space",
+      "psgldProviderValue": "HALF_EMPTY",
+      "observedAt": "2026-09-12T12:30:00.000Z",
+      "feedUpdatedAt": "2026-09-12T12:30:00.000Z"
+    }
+  ]
+}

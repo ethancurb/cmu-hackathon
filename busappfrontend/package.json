@@ -1,0 +1,19 @@
+{
+  "name": "busappfrontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "seed": "tsx data/seed.ts",
+    "smoke:source": "tsx data/smoke-source.ts",
+    "typecheck": "tsc --noEmit",
+    "export:json": "tsx data/export-json.ts"
+  },
+  "dependencies": {
+    "mongodb": "^6.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.19.1",
+    "typescript": "^5"
+  }
+}

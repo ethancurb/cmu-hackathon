@@ -55,7 +55,9 @@ Ten matched phones means ten participating devices, not necessarily ten passenge
 
 ## Minimal shared contract
 
-Create `src/lib/contracts.ts` and one matching fixture before independent consumers diverge. That code becomes canonical once implemented; do not independently rename this proposed contract. IDs are strings and timestamps are ISO UTC. Keep live and demo namespaces separate.
+Create `busappfrontend/lib/contracts.ts` and one matching fixture before independent consumers diverge. That code becomes canonical once implemented; do not independently rename this contract. IDs are strings and timestamps are ISO UTC. Keep live and demo namespaces separate.
+
+The app lives in `busappfrontend/` (settled by [#5](https://github.com/ethancurb/cmu-hackathon/issues/5)–[#10](https://github.com/ethancurb/cmu-hackathon/issues/10)); the earlier `src/` path in this document was written before that layout existed.
 
 ```ts
 type CapacityReading =
@@ -91,8 +93,8 @@ type CapacityCard = {
 };
 ```
 
-- `POST /api/capacity/resolve` accepts `{ agency, routeLabel, headsign, boardingStop: { name, lat, lng }, departureAt }`. Return `{ status: "matched" | "ambiguous" | "unavailable", candidates: [{ runKey, vehicleId, routeLabel, headsign, boardingStopId, expectedAtStop }] }`. A matched response has exactly one candidate; an unavailable response has none. This resolves an existing leg; it does not plan a route.
-- `GET /api/capacity?runKey=...&boardingStopId=...` returns `CapacityCard` for a verified active run and stop. Pass through provider ETA; do not develop an ETA engine. A present vehicle with no occupancy returns a successful card with unknown capacity.
+- `GET /api/arrivals?stopId=...&simNow=...` is the endpoint the current mock milestone builds ([#7](https://github.com/ethancurb/cmu-hackathon/issues/7)). It reads through `CapacitySource` and returns the ordered upcoming arrivals for one stop, each carrying a `CapacityReading` under the same freshness rules below. No caller reaches Mongo directly.
+- `POST /api/capacity/resolve` and `GET /api/capacity?runKey=...&boardingStopId=...` belong to the **live-PRT phase**, not the mock milestone; no open ticket builds them yet. `resolve` accepts `{ agency, routeLabel, headsign, boardingStop: { name, lat, lng }, departureAt }` and returns `{ status: "matched" | "ambiguous" | "unavailable", candidates: [{ runKey, vehicleId, routeLabel, headsign, boardingStopId, expectedAtStop }] }` — a matched response has exactly one candidate, an unavailable response has none; it resolves an existing leg and does not plan a route. `GET /api/capacity` returns `CapacityCard` for a verified active run and stop, passing through provider ETA; do not develop an ETA engine. A present vehicle with no occupancy returns a successful card with unknown capacity.
 - Errors: `{ error: { code, message, retryable } }`. Use HTTP 400 for invalid input, 409 for invalid/expired run association, 429 for rate limits, and 503 when the provider is unavailable and no usable cached record exists. Do not mislabel a provider outage as an empty bus.
 - `observedAt` is the occupancy measurement time, or null when unknown. BusTime vehicle `tmstmp` is the last positional update; prediction `tmstmp` is prediction generation time. Store these as `feedUpdatedAt`, never as occupancy measurement time or local fetch time. Label them "Feed updated" in the UI. A reported load with unknown measurement age uses `age_unknown`; retain the category but qualify its age. A fresh feed timestamp does not prove fresh occupancy. [BusTime guide](../DeveloperAPIGuide3_0.pdf), printed pp. 10, 26–27.
 - Start with a 90-second stale threshold, a prototype constant to validate. An old feed or known old occupancy observation marks a reading stale; only a verified recent occupancy observation can mark it fresh. Missing load remains unknown; conflicting reports remain conflicting. Stale, conflicting, or unverified-age readings never imply guaranteed available room. Unknown provider codes remain unknown.
