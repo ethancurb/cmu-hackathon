@@ -1,6 +1,8 @@
 # LoadLine build notes
 
-What future-you (or anyone else picking this up) needs to know that isn't obvious from reading the code cold. Written after the static `/plan` and `/trip` screens were built and diffed against the reference renders. See `busappfrontend/app/globals.css` for the tokens themselves — this file is the *why*.
+What future-you (or anyone else picking this up) needs to know that isn't obvious from reading the code cold. Started after the static `/plan` and `/trip` screens were built and diffed against the reference renders; extended after `/trip` became the interactive home screen (`/`). See `busappfrontend/app/globals.css` for the tokens themselves — this file is the *why*.
+
+**Routing note:** the screen originally built at `/trip` is now the home screen at `/`. `/trip` redirects to `/` (permanent, via `next.config.ts`'s `redirects()`) rather than existing as a page — old links still work, but there's no `app/trip/` directory anymore. References below to "the `/trip` screen" mean this screen's content, now living at `app/page.tsx`, `app/RouteMap.tsx`, `app/RouteListView.tsx`, `app/ArrivalCards.tsx`, and `app/ViewToggle.tsx`.
 
 ## The type scale and geometry were solved empirically, not read off the spec
 
@@ -66,12 +68,58 @@ The spec's own Type Scale table conflated several visually distinct roles under 
 - **Filled icons are hardcoded to `--ink-deep`** except when explicitly overridden via the `style` prop (added to `components/icons/filled.tsx` specifically because the primary button's walk icon must render `--on-ink` against the dark button fill — confirmed against the reference, which shows it white, not dark). If a new dark-surface icon usage comes up, use `style={{ color: "var(--on-ink)" }}`, not a Tailwind class (Tailwind utility class precedence between the baked-in `text-ink-deep` and an added override class isn't guaranteed by JSX ordering).
 - **`RouteMap`'s outer container is fluid-width** (`w-full`, SVG scaled via `viewBox`) so the page holds at 320px; the absolutely-positioned HTML overlays (chip, badges, toggle pair, labels) stay at their fixed 336px-design-width pixel coordinates and get clipped by `overflow-hidden` rather than escaping the container at narrower widths. They're correct at the 390px design width; they crowd/clip gracefully below it.
 - **`/plan`'s select row divides available width** rather than letting the secondary select size to its own content — primary is `flex-1 min-w-0`, secondary is capped at `max-w-[50%]` and truncates via its own `truncate` span if it must. This was a genuine layout bug (found via a 320px viewport test, not eyeballing) — 50% comfortably covers the secondary's natural content width at the 390px design scale, so nothing changed visually there; it only engages under real space pressure.
-- **No `@media (prefers-reduced-motion)` block exists**, deliberately — see the comment at the top of `globals.css`. There are currently zero transitions or animations anywhere in the codebase to reduce. The first commit that adds any interaction-state motion must add the reduced-motion handling for it in the same change.
+- **The map's "locate me" recenter pan is, as of this writing, the only transition in the codebase.** It's guarded with Tailwind's `motion-reduce:transition-none motion-reduce:duration-0` utilities rather than a hand-written `@media` block — see the comment at the top of `globals.css` for why, and for the standing rule: any future transition/animation must bring its reduced-motion handling in the same change.
 
-## What is NOT built
+## State: the single app context
 
-- **No live data.** All content on `/plan` and `/trip` is hardcoded sample data (`BARS`, `CARDS` arrays, literal strings). Nothing calls an API, reads a `contracts.ts` type, or talks to PRT/Google.
-- **No routing/navigation.** `NavBar`'s back/menu buttons and every `onClick`/`onToggle` prop across the primitives are wired as optional callbacks with no default behavior — nothing actually navigates between `/plan` and `/trip`, and the two screens don't share state.
-- **No state management.** `Checkbox`/`ListRow`/`IconToggle` are controlled components; nothing in the app currently holds their state (`ArrivalCards`, `CrowdingChart`, etc. render static props). Clicking a checkbox or toggle on either screen does nothing.
-- **Static map placeholder, not a real map.** `RouteMap`'s street texture is a hand-drawn SVG grid; the "map" is a fixed illustration with hardcoded route paths and coordinates, not tied to any real geography, geocoding, or map SDK. It was built this way deliberately — no map SDK was to be used — but it means route shapes, distances, and positions are illustrative only.
-- **Font files are real, not placeholder** (converted from the licensed OTFs via `wawoff2`, sources kept out of the repo) — this part *is* live, just noting it since earlier in this build it wasn't.
+`lib/app-context.tsx` exports one `AppProvider` (wrapped around `{children}` in `app/layout.tsx`, so it's available everywhere) and one `useAppState()` hook. No external state library — just `useState` + `useContext`. Nothing persists: a refresh resets everything to the defaults in `lib/mock-data.ts`, by design (no `localStorage`, no URL state).
+
+| Field | Type | Default | Changed by |
+|---|---|---|---|
+| `selectedRouteId` | `"71" \| "61" \| "54"` | `"61"` | Clicking an arrival card, a route's row in list view, or a route's bus marker context (none of the map's bus markers are independently clickable — only the arrival cards and list rows select a route) |
+| `departureTime` | `string` | `"By 9:00"` | Only the `/plan` primary button ("apply"). Never changes just from browsing `/plan` or hitting nav-back. |
+| `viewMode` | `"map" \| "list"` | `"map"` | The icon-toggle pair (`ViewToggle`), present in both `RouteMap` and `RouteListView` |
+| `weatherDismissed` | `boolean` | `false` | The weather chip's X. One-way for the session — nothing un-dismisses it. |
+| `selectedRecommendationId` | `string \| null` | `"rec-1"` | Checking a recommendation row on `/plan`. Cleared to `null` whenever a chart bar is clicked directly (see below) — the two must never show a stale relationship. |
+| `selectedHourIndex` | `number` (index into `BARS`) | `2` (10:00 am) | Clicking a chart bar directly, or indirectly via `selectRecommendation` (which looks up that recommendation's `barIndex` and moves the chart to match) |
+| `primarySelectValue` | `string` | `"Today"` | `/plan`'s primary `<select>` |
+| `secondarySelectValue` | `string` | `"Next 7 days"` | `/plan`'s secondary `<select>` |
+
+Two things that are deliberately *not* in this context, because they're screen-local, not app-wide:
+- **The home location field's value.** `LocationField`'s inline-edit state (`editing`, `draft`) and the committed value live in `app/page.tsx`'s own `useState`. Not in the STATE section's list of six fields, so it stayed local.
+- **The map's pan offset and "locate" flag.** Local to `RouteMap` (`locatedAtOrigin`, `lastActiveRouteId`). Purely presentational — see the recenter mechanism below.
+
+## Flow: how `/` and `/plan` talk to each other
+
+1. **Land on `/`.** Shows the defaults above — same visual state as the old static build (verified via screenshot diff, see below).
+2. **Tap the time row** ("Leave now | By 9:00", now a real `<button>` via `TimeRow`'s new `onClick` prop) → `router.push("/plan")`.
+3. **On `/plan`, browse freely.** Clicking a chart bar or checking a recommendation updates `selectedHourIndex`/`selectedRecommendationId` *live in context* — but critically, **not** `departureTime`. This is why nav-back doesn't need any snapshot/revert logic: browsing state and applied state are different fields, and only the primary button writes to the one that's actually displayed on `/`.
+4. **Press "Use selected time"** → `handleApply()` in `app/plan/page.tsx` picks the human-readable label (`RECOMMENDATIONS` title if the current hour matches one, else the bar's own `time` string), calls `applyDepartureTime(...)`, then `router.push("/")`. The button is disabled via `canApply` (true whenever `selectedHourIndex` is set, which — given the default preselection — is effectively always, but the check exists for robustness).
+5. **Nav-back chevron** (`NavBar`'s `onBack`, wired to `router.push("/")`) skips step 4 entirely — `departureTime` is untouched, so `/` shows whatever was last actually applied (or the default, if nothing ever was).
+
+Because `AppProvider` wraps the whole app once in the root layout, this all works with zero prop-drilling between the two routes and zero extra plumbing for "did the user apply or cancel" — that distinction falls entirely out of which context setter got called.
+
+## Interaction notes worth knowing
+
+- **`Select` is now a real native `<select>`** (`components/Select.tsx`), not a styled div — full keyboard operability and ARIA come for free from the browser. The OS chrome is hidden with `appearance-none`; our own `ChevronDownIcon` is overlaid with `pointer-events-none` so clicks pass through to the select underneath. This is a breaking prop change (`value`/`options`/`onChange`/`label` now required) — `app/kitchen-sink/page.tsx`'s two usages were updated to the new signature with inert `onChange={() => {}}` handlers just to keep it compiling; nothing about kitchen-sink's own design changed. That prop change is also why `kitchen-sink/page.tsx` and `Select.tsx` both needed `"use client"` added — a Server Component can't pass an event-handler closure as a prop to a Client Component.
+- **Checkboxes-as-radio-group**: `Checkbox` and `ListRow` both gained an optional `role` prop (`"checkbox" | "radio"`, default `"checkbox"`). The `/plan` recommendations list and the arrival-cards/list-view route selection both pass `role="radio"` and wrap their group in a `role="radiogroup"` container — visually identical checkbox, correct semantics for "exactly one selected."
+- **The map's "recenter" is a real, if illustrative, effect**, not a no-op button: selecting a different arrival card shifts a hardcoded per-route pixel offset (`ROUTE_FOCUS_OFFSET` in `app/RouteMap.tsx`) applied via CSS `transform: translate(...)` to a wrapper around the SVG + route overlays (the floating chip/toggle/utility buttons sit *outside* that wrapper, so they don't pan). "Locate me" resets the offset to `{0,0}` (centers on the origin ring, i.e. "my location"); picking a different route afterward resumes route-following. The offsets aren't derived from real geometry — they're just big enough to visibly demonstrate the effect. The 200ms transition is the app's only animation and is the reason `motion-reduce:` guarding shows up here specifically.
+- **Chat and stats utility buttons are genuinely `disabled`** (native `disabled` attribute, `opacity-40`, `aria-label` suffixed "(not available yet)") — there's no feedback form or stats screen behind them yet, so per the brief they're visibly inert rather than dead-looking-live. Same treatment applied to `NavBar`'s hamburger (`menuDisabled` prop) — no menu drawer exists.
+- **List view (`app/RouteListView.tsx`) has no reference render** — nothing in `ref-mobile.png` or `ref-wide.png` shows this mode, since it's a new interactive feature, not something depicted in the static mockups. It reuses `ListRow` and the same bordered/rounded panel treatment as the map for visual consistency, and shares `ViewToggle` with `RouteMap` so the toggle pair looks and behaves identically in both modes (each component renders its own copy of `ViewToggle` rather than trying to coordinate absolute positioning across a conditionally-swapped child — simpler and more robust than the alternative).
+- **Focus rings**: every interactive element added or touched in this pass got an explicit `outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue` (or `-outline-on-ink` for the primary button's dark background, for contrast) rather than relying on the browser default, which is inconsistent across elements like custom-styled `<select>`s and non-`<button>` clickable rows.
+
+## Verification performed for this pass
+
+- Screenshot diff of both screens' **default** state (nothing clicked) against `ref-mobile.png`/`ref-wide.png` panel 2 — pixel-identical to the pre-interactivity static build, confirming the rewrite didn't drift the visuals. Screenshots: `/design/diff/home-interactive-1.png`, `/design/diff/plan-interactive-1.png`.
+- A full flow walkthrough script (`scripts/test-flow.mjs`, Playwright, not a scratch file — rerun it after any state/flow change): lands on `/`, selects a card, confirms the summary row and map both update, navigates to `/plan` via the time row, picks a different hour, confirms the recommendation group clears appropriately, applies and confirms the return trip shows the new time, confirms route selection survived the round trip, confirms nav-back does *not* apply a browsed-but-uncommitted hour, confirms the `/trip` redirect, weather dismiss, view-mode switch, location inline-edit (commit + Escape-cancel), disabled utility buttons, and the locate recenter effect. All 23 checks passed at last run.
+- 320px viewport: both `/` and `/plan` hold exactly (`scrollWidth === clientWidth === 320`) — `/plan` is in fact tighter than before this pass (previously 321, now 320), likely because the native `<select>` renders marginally narrower than the old styled-div version.
+- `tsc --noEmit`, `eslint`, and `next build` all clean.
+
+## What is still NOT built
+
+- **No live data.** All content is hardcoded in `lib/mock-data.ts` (`ROUTES`, `BARS`, `RECOMMENDATIONS`, the select option lists). Nothing calls an API, reads a `contracts.ts` type, or talks to PRT/Google.
+- **No persistence.** Everything above lives in a `useState` inside `AppProvider`; a page refresh resets to the mock-data defaults. This is deliberate, per the brief, not a gap.
+- **Static map placeholder, not a real map.** `RouteMap`'s street texture is a hand-drawn SVG grid; the "map" is a fixed illustration with hardcoded route paths and coordinates, not tied to any real geography, geocoding, or map SDK. The recenter pan (above) moves a CSS transform, not an actual viewport over real map data.
+- **Chat feedback and crowding-stats screens don't exist** — their utility buttons are disabled, not stubbed with placeholder content.
+- **No menu drawer** — the hamburger is disabled on every screen.
+- **Font files are real, not placeholder** (converted from the licensed OTFs via `wawoff2`, sources kept out of the repo) — noting this again since it wasn't always true earlier in this build.

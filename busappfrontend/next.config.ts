@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
   devIndicators: false,
+  async redirects() {
+    return [{ source: "/trip", destination: "/", permanent: true }];
+  },
 };
 
 export default nextConfig;

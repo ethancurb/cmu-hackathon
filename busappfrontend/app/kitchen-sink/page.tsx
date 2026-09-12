@@ -1,3 +1,5 @@
+"use client";
+
 import { NavBar } from "@/components/NavBar";
 import { Headline } from "@/components/Headline";
 import { LocationField } from "@/components/LocationField";
@@ -51,10 +53,16 @@ export default function KitchenSinkPage() {
 
       <Section title="Select">
         <Row label="Primary — sentence case">
-          <Select value="Today" variant="primary" />
+          <Select value="Today" options={["Today", "Tomorrow"]} onChange={() => {}} variant="primary" label="Day" />
         </Row>
         <Row label="Secondary — uppercase, .08em tracking">
-          <Select value="Next 7 days" variant="secondary" />
+          <Select
+            value="Next 7 days"
+            options={["Next 7 days", "Next 30 days"]}
+            onChange={() => {}}
+            variant="secondary"
+            label="Range"
+          />
         </Row>
       </Section>
 

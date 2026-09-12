@@ -1,11 +1,16 @@
 /**
- * No transitions or animations exist anywhere in this codebase — by design,
- * not by omission (see AGENTS/build notes). There is deliberately no
- * `@media (prefers-reduced-motion: reduce)` block here: an empty one would
- * just be dead weight. The FIRST time any interaction state (hover, press,
- * open/close, drag) gets an actual transition or animation, that same change
- * must add a `prefers-reduced-motion: reduce` block disabling or shortening
- * it — don't let motion ship ahead of its reduced-motion counterpart.
+ * Motion stays minimal and deliberate. There is no global
+ * `@media (prefers-reduced-motion: reduce)` block here — an empty one would
+ * be dead weight, and the one transition that exists so far (the home map's
+ * "locate me" recenter pan, in app/RouteMap.tsx) is guarded per-element with
+ * Tailwind's `motion-reduce:transition-none motion-reduce:duration-0`
+ * utilities instead, which is the more precise fix for a single-element
+ * transition. The RULE remains: the first time any interaction state (hover,
+ * press, open/close, drag) gets an actual transition or animation, that same
+ * change must add its reduced-motion handling in the same commit — via the
+ * `motion-reduce:` variant for a one-off, or a real block here if multiple
+ * elements ever need the same treatment at once. Don't let motion ship ahead
+ * of its reduced-motion counterpart.
  */
 
 @tailwind base;

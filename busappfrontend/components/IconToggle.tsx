@@ -11,6 +11,9 @@ type IconToggleProps = {
   /** Utility buttons (map panel bottom corners) use the same 54px square
    * treatment but never carry an indicator — set false to omit it entirely. */
   showIndicator?: boolean;
+  /** Visibly disabled (dimmed, not focusable/clickable) for buttons with no
+   * behavior yet — never leave a dead-looking-live control. */
+  disabled?: boolean;
 };
 
 /**
@@ -19,15 +22,19 @@ type IconToggleProps = {
  * button width, ~8px tall, 3px radius, separated by a 3px gap. The lime is
  * below the button, not inside it.
  */
-export function IconToggle({ icon, active = false, onClick, label, showIndicator = true }: IconToggleProps) {
+export function IconToggle({ icon, active = false, onClick, label, showIndicator = true, disabled = false }: IconToggleProps) {
   return (
     <div className="inline-flex flex-col items-center gap-[3px]">
       <button
         type="button"
         onClick={onClick}
+        disabled={disabled}
         aria-pressed={showIndicator ? active : undefined}
         aria-label={label}
-        className="flex h-[54px] w-[54px] items-center justify-center rounded border border-border-soft bg-surface"
+        className={cn(
+          "flex h-[54px] w-[54px] items-center justify-center rounded border border-border-soft bg-surface outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue",
+          disabled && "opacity-40"
+        )}
       >
         {icon}
       </button>

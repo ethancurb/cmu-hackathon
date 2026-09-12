@@ -8,7 +8,7 @@ if (!outPath) {
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 390, height: 940 } });
-await page.goto("http://localhost:3000/trip", { waitUntil: "networkidle" });
+await page.goto("http://localhost:3000/", { waitUntil: "networkidle" });
 await page.screenshot({ path: outPath });
 await browser.close();
 console.log(`saved ${outPath}`);

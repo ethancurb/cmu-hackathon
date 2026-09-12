@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/cn";
 
 type Bar = { height: number; label?: string };
@@ -8,6 +10,7 @@ type CrowdingChartProps = {
   caption: string;
   bars: Bar[];
   selectedIndex: number;
+  onSelectHour: (index: number) => void;
 };
 
 // Geometry scaled ×1.354 from the 288px reference (16→22, 4→5, per Step 1).
@@ -24,6 +27,7 @@ const PITCH = BAR_WIDTH + BAR_GAP;
  * Centered value/descriptor, 11-column bar chart (22px bars, 5px gap, zero
  * radius, selected bar lime), a 1px playhead ~41px above the tallest bar, a
  * baseline rule wider than the bar group, alternating axis labels, caption.
+ * Bars are a radio group — clicking one selects that hour.
  *
  * The descriptor line ("Low crowding") uses the "descriptor" token, and the
  * caption ("Drag across...") uses "body" — these look alike in the old spec
@@ -33,7 +37,7 @@ const PITCH = BAR_WIDTH + BAR_GAP;
  * report. The caption keeps its 70%-opacity dimming regardless, since that's
  * a color/opacity treatment independent of size.
  */
-export function CrowdingChart({ value, descriptor, caption, bars, selectedIndex }: CrowdingChartProps) {
+export function CrowdingChart({ value, descriptor, caption, bars, selectedIndex, onSelectHour }: CrowdingChartProps) {
   const tallestHeight = Math.max(...bars.map((b) => b.height)) * CHART_HEIGHT;
   const playheadHeight = tallestHeight + PLAYHEAD_EXTRA;
   const groupWidth = bars.length * BAR_WIDTH + (bars.length - 1) * BAR_GAP;
@@ -46,11 +50,19 @@ export function CrowdingChart({ value, descriptor, caption, bars, selectedIndex 
 
       <div className="relative mt-4" style={{ height: CHART_HEIGHT, width: groupWidth }}>
         <div className="absolute bottom-0 w-px bg-bar" style={{ left: playheadLeft, height: playheadHeight }} />
-        <div className="absolute bottom-0 flex" style={{ gap: BAR_GAP }}>
+        <div role="radiogroup" aria-label="Select an hour" className="absolute bottom-0 flex" style={{ gap: BAR_GAP }}>
           {bars.map((bar, i) => (
-            <div
+            <button
               key={i}
-              className={cn(i === selectedIndex ? "bg-lime" : "bg-bar")}
+              type="button"
+              role="radio"
+              aria-checked={i === selectedIndex}
+              aria-label={bar.label ? `Bar for ${bar.label}` : `Bar ${i + 1}`}
+              onClick={() => onSelectHour(i)}
+              className={cn(
+                "self-end outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue",
+                i === selectedIndex ? "bg-lime" : "bg-bar"
+              )}
               style={{ width: BAR_WIDTH, height: bar.height * CHART_HEIGHT }}
             />
           ))}

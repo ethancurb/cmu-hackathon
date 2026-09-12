@@ -15,7 +15,12 @@ export function Chip({ icon, label, onDismiss }: ChipProps) {
     <div className="inline-flex items-center gap-2 rounded border border-border-soft bg-surface px-[11px] py-[5px]">
       <span className="flex items-center">{icon}</span>
       <span className="text-label text-blue">{label}</span>
-      <button type="button" onClick={onDismiss} aria-label="Dismiss" className="flex items-center text-blue">
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss"
+        className="flex items-center text-blue outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
+      >
         <CloseXIcon className="h-[19px] w-[19px]" />
       </button>
     </div>

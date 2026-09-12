@@ -6,6 +6,9 @@ type CheckboxProps = {
   checked?: boolean;
   onChange?: (checked: boolean) => void;
   label?: string;
+  /** Single-select groups (recommendations) behave as radio buttons —
+   * same visual, correct ARIA role. */
+  role?: "checkbox" | "radio";
 };
 
 /**
@@ -13,16 +16,16 @@ type CheckboxProps = {
  * (was 1.5px) --ink-deep border. Checked fills --lime, keeps the border, and
  * draws a black check — stroke scaled to 3px to match the border weight.
  */
-export function Checkbox({ checked = false, onChange, label }: CheckboxProps) {
+export function Checkbox({ checked = false, onChange, label, role = "checkbox" }: CheckboxProps) {
   return (
     <button
       type="button"
-      role="checkbox"
+      role={role}
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange?.(!checked)}
       className={cn(
-        "flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded border-2 border-ink-deep",
+        "flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded border-2 border-ink-deep outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue",
         checked ? "bg-lime" : "bg-transparent"
       )}
     >
