@@ -9,6 +9,7 @@ const pages = [
   ['home-demo-0', '/?demo=pirates&stage=0'],
   ['home-demo-3', '/?demo=pirates&stage=3'],
   ['plan', '/plan'],
+  ['information', '/information'],
 ];
 const browser = await chromium.launch({ headless: true });
 const problems = [];
@@ -20,7 +21,7 @@ try {
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
     page.on('pageerror', (e) => errors.push(String(e)));
     for (const [name, path] of pages) {
-      if (vpName !== 'phone' && name !== 'home-demo-3' && name !== 'plan') continue;
+      if (vpName !== 'phone' && name !== 'home-demo-3' && name !== 'plan' && name !== 'information') continue;
       await page.goto(base + path, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(4500);
       const overflow = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth - document.documentElement.clientWidth, body: document.body.scrollWidth - document.body.clientWidth }));

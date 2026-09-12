@@ -4,8 +4,8 @@ import { Divider } from "@/components/Divider";
 import { Disclosure } from "@/components/Disclosure";
 import { PressureDots } from "./PressureDots";
 import type { PressureState } from "@/lib/pressure/use-pressure";
-import { clock, timeRange, dayLabel, CONFIDENCE_WORD, LEVEL_COLOR, LEVEL_WORD, sourcesSummary, confidenceNote } from "@/lib/pressure/format";
-import type { EventImpact, PressureResult, UpcomingEvent } from "@/lib/pressure/types";
+import { clock, timeRange, dayLabel, CONFIDENCE_WORD, LEVEL_COLOR, LEVEL_WORD } from "@/lib/pressure/format";
+import type { EventImpact, UpcomingEvent } from "@/lib/pressure/types";
 
 const MAX_REASONS = 4;
 
@@ -17,8 +17,8 @@ type PressureModuleProps = {
 
 /**
  * Concise Transit Pressure summary: the 0–100 model index, level, confidence
- * and surge window stay visible; WHY, advice, event impact and provenance sit
- * in collapsed sections. Every value is produced by lib/pressure/engine.ts —
+ * and surge window stay visible; WHY, advice and event impact sit
+ * in collapsed sections. Provenance lives on the Information page. Every value is produced by lib/pressure/engine.ts —
  * the advice time and text are never typed in here.
  */
 export function PressureModule({ state, whenLabel }: PressureModuleProps) {
@@ -46,7 +46,6 @@ export function PressureModule({ state, whenLabel }: PressureModuleProps) {
   const { current, surge, recommendation } = data;
   const reasons = current.reasons.slice(0, MAX_REASONS);
   const majorEvent = data.eventImpacts.find((i) => i.role === "MAJOR") ?? null;
-  const note = confidenceNote(data.freshness);
 
   return (
     <section className="px-gutter" aria-live="polite">
@@ -107,9 +106,6 @@ export function PressureModule({ state, whenLabel }: PressureModuleProps) {
       </Disclosure>
       <Divider />
 
-      <Disclosure label="Sources" summary={`${data.mode === "DEMO" ? "demo · " : ""}${sourcesSummary(data.freshness)}`}>
-        <SourcesList data={data} note={note} />
-      </Disclosure>
     </section>
   );
 }
@@ -147,35 +143,6 @@ function UpcomingRow({ upcoming }: { upcoming: UpcomingEvent }) {
         {event.venue} · {dayLabel(event.startTime)} {clock(event.startTime)} · arrivals peak ~{clock(upcoming.arrivalsPeakAt)} · exit wave ~
         {clock(upcoming.exitPeakAt)}{event.endEstimated ? " (est.)" : ""}
       </p>
-    </div>
-  );
-}
-
-function SourcesList({ data, note }: { data: PressureResult; note: string | null }) {
-  return (
-    <div>
-      {note ? <p className="text-footnote text-blue">{note}</p> : null}
-      <ul className="mt-1 flex flex-col gap-1">
-        {data.freshness.map((f) => (
-          <li key={f.source} className="text-footnote text-blue">
-            <span className="font-bold">{f.source}</span> · {f.status.toLowerCase()}
-            {f.updatedAt ? ` · feed ${clock(f.updatedAt)}` : f.fetchedAt ? ` · ${clock(f.fetchedAt)}` : ""} · <span className="opacity-footnote">{f.detail}</span>
-          </li>
-        ))}
-      </ul>
-      {data.coverageGaps.length ? (
-        <>
-          <p className="mt-2 text-footnote text-blue">Not covered this run (absence is not evidence of quiet):</p>
-          <ul className="flex flex-col">
-            {data.coverageGaps.map((gap) => (
-              <li key={gap} className="text-footnote text-blue opacity-footnote">
-                · {gap}
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
-      <p className="mt-2 text-footnote text-blue opacity-footnote">{data.coverage}</p>
     </div>
   );
 }
