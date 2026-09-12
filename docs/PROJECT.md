@@ -1,5 +1,9 @@
 # Product: predictive Transit Pressure
 
+## Decision 2026-09-12, issue #24 (chosen by BigMike)
+
+The home visual switcher has two purposeful modes: **Map** and **Vehicle**. Remove the redundant List mode and keep the three live route-arrival tiles visible immediately below either visual surface, restoring the earlier scan order the user preferred. The tiles remain nearby-CMU context rather than a claim about the selected itinerary; no arrival, journey, crowding, or Transit Pressure contract changes.
+
 ## Decision 2026-09-12, issue #23 (chosen by BigMike)
 
 Add one tightly scoped **current passenger-load observation** beside the existing product: PRT TrueTime's categorical load for route 71B inbound at Fifth Ave + College (stop 3141). It is supporting live evidence, not a replacement for predictive Transit Pressure and not a prediction of how full the bus will be when it reaches another stop.

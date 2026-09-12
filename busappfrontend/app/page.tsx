@@ -6,10 +6,8 @@ import { NavBar } from "@/components/NavBar";
 import { LocationField } from "@/components/LocationField";
 import { TimeRow } from "@/components/TimeRow";
 import { PrimaryButton } from "@/components/PrimaryButton";
-import { Disclosure } from "@/components/Disclosure";
 import { ClockIcon } from "@/components/icons/stroked";
 import { RouteMap } from "./RouteMap";
-import { RouteListView } from "./RouteListView";
 import { ArrivalCards } from "./ArrivalCards";
 import { PressureModule } from "./PressureModule";
 import { JourneyPanel } from "./JourneyPanel";
@@ -202,19 +200,18 @@ export default function HomePage() {
             viewMode={viewMode}
             onSetViewMode={setViewMode}
           />
-        ) : viewMode === "list" ? (
-          <RouteListView
-            selectedRouteId={selectedRouteId}
-            onSelectRoute={setSelectedRouteId}
-            viewMode={viewMode}
-            onSetViewMode={setViewMode}
-            arrivals={arrivals}
-            journey={journey}
-          />
         ) : (
           <VehicleModelView viewMode={viewMode} onSetViewMode={setViewMode} />
         )}
       </div>
+
+      {/* Keep route choices visible directly beneath either visual view. These
+          are nearby CMU arrivals, not claims about a selected itinerary. */}
+      {nearCmu ? (
+        <div className="mt-4">
+          <ArrivalCards selectedRouteId={selectedRouteId} onSelectRoute={setSelectedRouteId} arrivals={arrivals} />
+        </div>
+      ) : null}
 
       <div className="mt-4">
         <JourneyPanel state={journeys} journey={journey} onSelect={selectJourney} hasDestination={!!tripEnd && !scenario} whenLabel={tripWhen} />
@@ -238,16 +235,6 @@ export default function HomePage() {
       <div className="mt-4">
         <PressureModule state={pressure} whenLabel={pressureWhen} />
       </div>
-
-      {/* Live next-bus predictions cover three tracked routes near CMU. They are
-          context for riders starting there, not a claim about the itinerary. */}
-      {nearCmu ? (
-        <div className="mt-2 px-gutter">
-          <Disclosure label="Next bus near CMU" summary="live PRT">
-            <ArrivalCards selectedRouteId={selectedRouteId} onSelectRoute={setSelectedRouteId} arrivals={arrivals} compact />
-          </Disclosure>
-        </div>
-      ) : null}
 
       {nearCmu ? (
         <div className="mt-2 px-gutter">

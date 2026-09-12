@@ -14,7 +14,7 @@ flowchart LR
   API_C -->|validated ChatAction[]| CTX
   CTX --> H[useJourneys → /api/journey → motis.ts]
   CTX --> PR[usePressure → /api/pressure]
-  H --> MAP[MapCanvas legs · JourneyPanel · RouteListView]
+  H --> MAP[MapCanvas legs · JourneyPanel · arrival tiles]
   PR --> MOD[PressureModule · /plan timeline · explain.ts]
 ```
 
@@ -45,14 +45,14 @@ flowchart LR
 
 ### Interactive vehicle view (`app/VehicleModelView.tsx`, issue #22)
 
-- `ViewMode` is `map | list | vehicle`; the same top-right control switches all three map-panel views without changing the selected trip, journey or pressure result.
+- `ViewMode` is `map | vehicle`; the top-right control switches between the two visual views without changing the selected trip, journey, selected route, or pressure result. The former List mode was removed in #24; its route information is more scannable as three always-visible live arrival tiles immediately below either visual view.
 - Vehicle mode loads Three.js, `GLTFLoader` and `OrbitControls` only after it is opened. The 1.7 MB GLB and two poster fallbacks are local under `public/models`, so the demo does not depend on a model CDN. A failed WebGL context keeps the supplied poster visible instead of leaving a blank panel.
 - The supplied GLB has named roof, side-panel, articulation-pivot and bellows nodes but no baked clips or passengers. `lib/vehicle-model.ts` supplies the tested reveal phases and bellows interpolation; the viewer animates roof removal before the side/window panels, keeps the accordion visible, and caps bend at ±30°. Rotation pauses for `prefers-reduced-motion`; drag/pinch and keyboard arrows remain available.
 - This is an illustrative XD60 concept, not a verified PRT fleet configuration or engineering model. It does not read `/api/pressure`, turn the model index into passengers, or claim occupancy/capacity. That separation is always visible in the panel.
 
 ### Verification
 
-`npm test` (pressure, adapters, journey, chat, explain, vehicle reveal/articulation), typecheck, lint, build; foreground `npm start -- --port 3100` then `qa-screens`, `qa-flow`, `qa-fail`, `qa-menu`, `qa-journey`, `qa-vehicle` (local GLB load → pause/reveal/bend → Map/List/Vehicle remount → phone overflow/console checks).
+`npm test` (pressure, adapters, journey, chat, explain, vehicle reveal/articulation), typecheck, lint, build; foreground `npm start -- --port 3100` then `qa-screens`, `qa-flow`, `qa-fail`, `qa-menu`, `qa-journey`, `qa-vehicle` (local GLB load → pause/reveal/bend → Map/Vehicle remount → arrival-tile presence → phone overflow/console checks).
 
 ## Transit Pressure (issue #19)
 
@@ -167,11 +167,11 @@ The picked address (label + coordinate) is cached in `localStorage` (`lib/destin
 
 ### Real arrival predictions, not mock times
 
-`app/ArrivalCards.tsx`, `app/RouteListView.tsx`, and the home screen's bottom summary (`app/page.tsx`) no longer read `Route.scheduledTime`/`arrivesIn`/`status` from `lib/mock-data.ts` — those fields were removed (dead once nothing read them; `Route.seats` stays mock, since real occupancy is the separate, unimplemented capacity feature in docs/PROJECT.md and this change never touches it). Times now come from PRT's live GTFS-realtime **TripUpdate** feed — a second feed alongside the VehiclePositions one `docs/PRT-DATA.md` already verified key-free access to, same debug-text format, listed at `https://truetime.portauthority.org/gtfsrt-bus/` (`.../trips?debug=`). `lib/prt-trip-updates.ts` parses it (same diagnostic-text-parsing approach as `scripts/probe-prt.mjs`, not a protobuf decoder); `lib/prt-routes.ts` holds, per tracked route, a handful of real PRT stop_ids within ~700m of CMU (extracted once from PRT's GTFS static feed's `stops.txt`/`stop_times.txt`/`trips.txt` — the extraction script wasn't kept, only its small static output).
+`app/ArrivalCards.tsx` no longer reads `Route.scheduledTime`/`arrivesIn`/`status` from `lib/mock-data.ts` — those fields were removed once nothing used them. The three cards are always visible directly below the Map or Vehicle view when the rider is near CMU; selecting one changes the tracked route without replacing the primary visual with a redundant list. Times come from PRT's live GTFS-realtime **TripUpdate** feed — a second feed alongside the VehiclePositions one `docs/PRT-DATA.md` already verified key-free access to, same debug-text format, listed at `https://truetime.portauthority.org/gtfsrt-bus/` (`.../trips?debug=`). `lib/prt-trip-updates.ts` parses it (same diagnostic-text-parsing approach as `scripts/probe-prt.mjs`, not a protobuf decoder); `lib/prt-routes.ts` holds, per tracked route, a handful of real PRT stop_ids within ~700m of CMU (extracted once from PRT's GTFS static feed's `stops.txt`/`stop_times.txt`/`trips.txt` — the extraction script wasn't kept, only its small static output).
 
 This feed has no CORS headers, so it's fetched server-side: `app/api/arrival-times/route.ts` (a plain Next.js Route Handler, in-memory-cached 15s to coalesce every client's poll into one upstream read) returns, per tracked route, either `{status:"live", stopName, epochSeconds, minutesFromNow}` or `{status:"unavailable"}`. **Named deliberately differently from the `/api/arrivals` (`CapacityCard`) contract in issue #7/T3** — that's a separate, larger CapacitySource-backed contract that also carries occupancy; this endpoint only ever reports a predicted time, never a seat count, and shouldn't be confused with or block that ticket. `lib/arrivals.ts`'s `useArrivalTimes()` polls it client-side every 20s.
 
-**"Unavailable" is an expected, honest state, not a bug**: PRT's live feed only carries predictions for trips currently in progress, which was a real, very short list in testing (as few as ~14 route_ids system-wide in one off-peak Saturday-morning snapshot) — a tracked route can legitimately have no live prediction most of the time it's checked. The UI shows "—" for that route's time rather than falling back to the old mock number or a stale cached one. There's no static-schedule fallback (e.g. "Scheduled 8:46" when live is empty) — that would need calendar-aware service-day filtering (`calendar.txt`/`calendar_dates.txt`) to avoid showing next Tuesday's schedule on a Saturday, which wasn't built here; skipping it was a deliberate scope cut, not an oversight, and it's the next thing to add if "unavailable" shows up too often in a real demo run. The bottom summary's right-hand slot shows the real stop name the prediction is for instead of a fabricated on-time/delay judgment — GTFS-RT here gives a predicted time, not a scheduled-vs-actual delta, so there's no verified delay to report.
+**"Unavailable" is an expected, honest state, not a bug**: PRT's live feed only carries predictions for trips currently in progress, which was a real, very short list in testing (as few as ~14 route_ids system-wide in one off-peak Saturday-morning snapshot) — a tracked route can legitimately have no live prediction most of the time it's checked. The UI shows "—" for that route's time rather than falling back to the old mock number or a stale cached one. There's no static-schedule fallback (e.g. "Scheduled 8:46" when live is empty) — that would need calendar-aware service-day filtering (`calendar.txt`/`calendar_dates.txt`) to avoid showing next Tuesday's schedule on a Saturday, which wasn't built here; skipping it was a deliberate scope cut, not an oversight, and it's the next thing to add if "unavailable" shows up too often in a real demo run.
 
 ## Join Google to the correct bus
 

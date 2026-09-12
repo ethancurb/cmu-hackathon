@@ -10,8 +10,6 @@ type ArrivalCardsProps = {
   onSelectRoute: (id: RouteId) => void;
   /** Live PRT predictions, or null before the first poll response arrives. */
   arrivals: ArrivalTimes | null;
-  /** Hides the "Next bus / Live PRT" header when the parent already labels the section. */
-  compact?: boolean;
 };
 
 /**
@@ -24,16 +22,14 @@ type ArrivalCardsProps = {
  * seat or occupancy figure is shown anywhere: LoadLine has no passenger-count
  * source, and Transit Pressure (above) is a model index, not a load reading.
  */
-export function ArrivalCards({ selectedRouteId, onSelectRoute, arrivals, compact = false }: ArrivalCardsProps) {
+export function ArrivalCards({ selectedRouteId, onSelectRoute, arrivals }: ArrivalCardsProps) {
   return (
     <div>
-      {!compact ? (
-        <div className="flex justify-between px-gutter">
-          <span className="text-label text-blue">Next bus</span>
-          <span className="text-label text-blue">Live PRT</span>
-        </div>
-      ) : null}
-      <div role="radiogroup" aria-label="Select a route" className={`arrival-cards flex gap-2 ${compact ? "" : "mt-2 px-gutter"}`}>
+      <div className="flex justify-between px-gutter">
+        <span className="text-label text-blue">Next bus</span>
+        <span className="text-label text-blue">Live PRT</span>
+      </div>
+      <div role="radiogroup" aria-label="Select a route" className="arrival-cards mt-2 flex gap-2 px-gutter">
         {ROUTES.map((route) => {
           const selected = route.id === selectedRouteId;
           const live = arrivals?.[route.id];

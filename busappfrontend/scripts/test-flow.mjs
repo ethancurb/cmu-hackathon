@@ -86,13 +86,15 @@ await page.click('button[aria-label="Dismiss"]');
 const chipAfterDismiss = await page.locator("text=Ends in 18m").count();
 log("Weather chip dismissed after clicking X", chipAfterDismiss === 0);
 
-// 10. View mode toggle: switch to list view, confirm ListRow rows appear
-await page.click('button[aria-label="List view"]');
-const listRows = await page.locator("text=71 · 8:46").count();
-log("Switching to list view shows routes as ListRow rows", listRows > 0);
+// 10. Only visual views remain; route information stays in tiles below either one.
+const listControl = await page.locator('button[aria-label="List view"]').count();
+log("List view control is removed", listControl === 0);
+const routeTiles = await page.locator('[role="radiogroup"][aria-label="Select a route"] [role="radio"]').count();
+log("Three route tiles remain visible below the map", routeTiles === 3);
+await page.click('button[aria-label="Vehicle model"]');
+const vehicleTiles = await page.locator('[role="radiogroup"][aria-label="Select a route"] [role="radio"]').count();
+log("Route tiles remain visible below the vehicle model", vehicleTiles === 3);
 await page.click('button[aria-label="Map view"]');
-const mapBack = await page.locator("text=Morewood Avenue >> nth=1").count(); // map annotation label
-log("Switching back to map view restores the map", mapBack >= 0); // presence check, non-fatal
 
 // 11. Location field inline edit
 await page.click('button[aria-label="Edit location"]');

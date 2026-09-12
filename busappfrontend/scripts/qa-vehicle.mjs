@@ -45,13 +45,16 @@ try {
     }
 
     await page.screenshot({ path: `../qa/${viewport.width}-vehicle-cutaway.png`, fullPage: true });
-    await page.getByRole("button", { name: "List view" }).click();
+    const listControl = await page.getByRole("button", { name: "List view" }).count();
+    if (listControl) problems.push(`${viewport.width}px: List view control is still present`);
+    const routeTiles = await page.getByRole("radiogroup", { name: "Select a route" }).getByRole("radio").count();
+    if (routeTiles !== 3) problems.push(`${viewport.width}px: expected 3 route tiles below vehicle, found ${routeTiles}`);
     await page.getByRole("button", { name: "Map view" }).click();
     await page.getByRole("button", { name: "Vehicle model" }).click();
     await page.getByText("Drag to orbit · illustrative model · not live occupancy").waitFor({ timeout: 20_000 });
 
     if (errors.length) problems.push(`${viewport.width}px console: ${errors.join(" | ")}`);
-    console.log(`${viewport.width}px: model loaded, controls exercised, views switched, overflow ${layout?.docOverflow}`);
+    console.log(`${viewport.width}px: model loaded, controls exercised, Map/Vehicle switched, 3 arrival tiles visible, overflow ${layout?.docOverflow}`);
     await context.close();
   }
 } finally {
