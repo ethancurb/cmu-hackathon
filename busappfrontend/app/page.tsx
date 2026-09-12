@@ -59,7 +59,7 @@ export default function HomePage() {
   const liveArrival = arrivals?.[selectedRouteId];
 
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas">
+    <div className="mobile-screen home-screen flex min-h-dvh flex-col bg-canvas">
       <NavBar menuDisabled />
 
       <div className="mt-4 px-gutter">
@@ -70,7 +70,7 @@ export default function HomePage() {
         <TimeRow left="Leave now" right={departureTime} onClick={() => router.push("/plan")} />
       </div>
 
-      <div className="mt-4 px-gutter">
+      <div className="route-panel mt-4 px-gutter">
         {viewMode === "map" ? (
           <RouteMap
             activeRouteId={selectedRouteId}
@@ -92,11 +92,11 @@ export default function HomePage() {
         )}
       </div>
 
-      <div className="mt-4">
+      <div className={`mt-4 ${viewMode === "list" ? "list-arrivals" : ""}`}>
         <ArrivalCards selectedRouteId={selectedRouteId} onSelectRoute={setSelectedRouteId} arrivals={arrivals} />
       </div>
 
-      <div className="mt-3 flex items-center justify-between px-gutter">
+      <div className="arrival-summary mt-3 flex items-center justify-between gap-3 px-gutter">
         <span className="flex items-center gap-2">
           <BusIcon className="h-4 w-4" />
           <span className="flex flex-col">
@@ -111,7 +111,7 @@ export default function HomePage() {
             predicted time, not a scheduled-vs-actual delta, so there's no
             verified "status" to report; the stop name is real and useful
             instead of leaving this side blank. */}
-        <span className="flex items-center gap-2 text-descriptor text-blue">
+        <span className="min-w-0 flex items-center gap-2 text-right text-body text-blue">
           <ClockIcon className="h-4 w-4" />
           {liveArrival?.status === "live" ? liveArrival.stopName : "No live prediction"}
         </span>

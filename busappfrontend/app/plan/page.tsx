@@ -38,7 +38,7 @@ export default function PlanPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas">
+    <div className="mobile-screen plan-screen flex min-h-dvh flex-col bg-canvas">
       <NavBar backLabel="Plan" onBack={() => router.push("/")} />
 
       <Headline subhead="Morewood Avenue">A quieter trip.</Headline>

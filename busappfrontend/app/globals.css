@@ -78,3 +78,65 @@ body {
   /* Temporary fallback behind the real family — see app/font-check.ts */
   font-family: var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
+
+/* Keep the app shell still; the map takes the remaining phone height. */
+html, body {
+  margin: 0;
+  overscroll-behavior: none;
+}
+
+@media (max-width: 767px) {
+  body:has(.mobile-screen) {
+    overflow: hidden;
+  }
+
+  .mobile-screen {
+    height: 100dvh;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .mobile-screen > * { flex-shrink: 0; min-width: 0; }
+  .home-screen .route-panel { flex: 1; min-height: 0; }
+  .home-screen .route-panel > div { height: 100% !important; }
+  .home-screen .route-panel > div > .flex { height: 100%; justify-content: space-evenly; }
+  .arrival-summary > span:first-child { flex-shrink: 0; }
+  .arrival-summary svg { flex-shrink: 0; }
+  .list-arrivals { display: none; }
+  .arrival-cards .text-emphasis-number { font-size: clamp(16px, 5vw, 21px); }
+  .arrival-cards .text-descriptor { font-size: clamp(13px, 4vw, 17px); }
+
+  @media (max-height: 740px) {
+    .mobile-screen { --gutter: 16px; }
+    .mobile-screen > [class*="mt-"] { margin-top: 8px; }
+    .home-screen .arrival-cards > button { padding-block: 8px; }
+    .home-screen > :last-child { padding-block: 8px; }
+    .plan-screen > :nth-child(2) { padding-top: 8px; }
+    .plan-screen { --text-headline: 36px; }
+    .plan-screen [class*="h-[61px]"] { height: 48px; }
+    .plan-screen [class*="py-[11px]"] { padding-block: 6px; }
+    .plan-screen > :nth-child(4) { zoom: 0.85; }
+  }
+
+  @media (max-height: 600px) {
+    .plan-screen { --text-headline: 28px; --text-location-subhead: 14px; }
+    .plan-screen > :first-child { height: 44px; }
+    .plan-screen > [class*="mt-"] { margin-top: 4px; }
+    .plan-screen > :nth-child(2) { padding-top: 0; }
+    .plan-screen > :nth-child(4) { zoom: 0.7; }
+    .plan-screen [class*="h-[61px]"] { height: 44px; }
+    .plan-screen > :last-child { padding-bottom: 8px; }
+  }
+
+  @media (max-width: 359px) {
+    .mobile-screen { --gutter: 12px; --text-label: 14px; }
+    .arrival-cards { gap: 6px; }
+  }
+
+  .mobile-screen > :last-child { margin-top: auto; }
+}

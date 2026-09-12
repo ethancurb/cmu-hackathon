@@ -34,7 +34,7 @@ export function ArrivalCards({ selectedRouteId, onSelectRoute, arrivals }: Arriv
         <span className="text-label text-blue">Arrival</span>
         <span className="text-label text-blue">Seats estimated</span>
       </div>
-      <div role="radiogroup" aria-label="Select a route" className="mt-2 flex gap-4 px-gutter">
+      <div role="radiogroup" aria-label="Select a route" className="arrival-cards mt-2 flex gap-2 px-gutter">
         {ROUTES.map((route) => {
           const selected = route.id === selectedRouteId;
           const live = arrivals?.[route.id];
@@ -53,7 +53,7 @@ export function ArrivalCards({ selectedRouteId, onSelectRoute, arrivals }: Arriv
               aria-label={`Route ${route.id}, ${ariaTime}, ${route.seats}`}
               onClick={() => onSelectRoute(route.id)}
               className={cn(
-                "relative flex flex-1 flex-col items-center gap-1 rounded border py-3 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue",
+                "relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded border py-3 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue",
                 selected ? "border-ink-deep bg-canvas" : "border-border-soft bg-surface"
               )}
             >
