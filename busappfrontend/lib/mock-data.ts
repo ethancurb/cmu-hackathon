@@ -8,20 +8,19 @@ export type RouteId = "71" | "61" | "54";
 
 export type Route = {
   id: RouteId;
-  /** Scheduled clock time shown on the arrival card, e.g. "8:46". */
-  scheduledTime: string;
+  // Arrival clock time, minutes-until-arrival, and status are no longer
+  // mock — they come from PRT's live TripUpdate feed (see lib/arrivals.ts,
+  // app/api/arrival-times/route.ts). Seats stay mock: real occupancy is a
+  // separate, unimplemented capacity feature (docs/PROJECT.md).
   seats: string;
-  /** Minutes-until-arrival, shown in the home summary row when this route is selected. */
-  arrivesIn: string;
-  status: string;
   /** Walk time to this route's stop — the primary button's value reflects the selected route. */
   walkTime: string;
 };
 
 export const ROUTES: Route[] = [
-  { id: "71", scheduledTime: "8:46", seats: "17 free", arrivesIn: "4 min", status: "On time", walkTime: "2 min" },
-  { id: "61", scheduledTime: "8:49", seats: "6 free", arrivesIn: "2 min", status: "3 min late", walkTime: "1 min" },
-  { id: "54", scheduledTime: "8:55", seats: "24 free", arrivesIn: "6 min", status: "On time", walkTime: "3 min" },
+  { id: "71", seats: "17 free", walkTime: "2 min" },
+  { id: "61", seats: "6 free", walkTime: "1 min" },
+  { id: "54", seats: "24 free", walkTime: "3 min" },
 ];
 
 export const DEFAULT_ROUTE_ID: RouteId = "61";
