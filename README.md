@@ -2,6 +2,8 @@
 
 Four humans, mixed AI/manual coding, one goal: win a track with a distinctive project that works. This repo is the shared context for your coding agents. Humans only need this page and the current [project decisions](docs/PROJECT.md).
 
+**Our project:** help CMU riders decide whether an arriving PRT bus is worth waiting for using evidence about that specific bus's crowding and recent pass-ups. Recommended track: **Traveling**. Read the [product and four-person plan](docs/PROJECT.md) and [proposed architecture](docs/ARCHITECTURE.md).
+
 ## The 60-second version
 
 - Choose a track your core idea fits naturally. Give each judging criterion something concrete to inspect.
@@ -39,4 +41,4 @@ Work from the current PROJECT decision and my role's handoff.
 
 No framework or runtime is needed to use this packet. Add product checks with the product. Main protection and mandatory PRs are not part of this workflow.
 
-The [opening deck](HackCMU%202026%20Opening%20Ceremony.pdf) is incorporated: Optimization, Traveling, Multiplayer, Food; three-minute presentation/demo; Saturday **4 p.m. EDT** submission. The idea is next; product scope, target track, and stack remain unselected.
+The [opening deck](HackCMU%202026%20Opening%20Ceremony.pdf) is incorporated: three-minute presentation/demo; Saturday **4 p.m. EDT** submission. The problem and recommended build plan are recorded. The app is not implemented; PRT data access, pilot IDs, and human role assignments still need verification.
