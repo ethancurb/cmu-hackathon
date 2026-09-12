@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
 import { LocationField } from "@/components/LocationField";
@@ -21,6 +21,7 @@ import { CMU_FALLBACK, useDeviceLocation } from "@/lib/geolocation";
 import { useNow } from "@/lib/use-now";
 import { usePressure } from "@/lib/pressure/use-pressure";
 import { pickJourney, useJourneys } from "@/lib/journey/use-journeys";
+import { recommendedBus } from "@/lib/journey/recommendation";
 import { distanceKm } from "@/lib/pressure/geo";
 import { SCENARIOS, SCENARIO_DEFINITIONS, stageCount, type Scenario } from "@/lib/pressure/demo";
 import { clock, weekdayShort } from "@/lib/pressure/format";
@@ -54,6 +55,7 @@ function writeDemoParam(demo: DemoSelection | null) {
 
 export default function HomePage() {
   const router = useRouter();
+  const mapPanel = useRef<HTMLDivElement>(null);
   const {
     selectedRouteId,
     setSelectedRouteId,
@@ -114,6 +116,7 @@ export default function HomePage() {
   });
   const journeyList = useMemo(() => (journeys.data?.status === "ok" ? journeys.data.journeys : []), [journeys.data]);
   const journey = pickJourney(journeyList, selectedJourneyId);
+  const bestBus = journeys.loading || journeys.error ? null : recommendedBus(journeyList);
 
   // Pressure is modeled for the moment the rider actually leaves: the selected
   // journey's departure when one exists, otherwise the chosen time or now.
@@ -143,6 +146,15 @@ export default function HomePage() {
     applyDepartureAt(null);
     selectJourney(null);
     journeys.refresh();
+  }
+
+  function showRecommendedJourney(id: string) {
+    selectJourney(id);
+    setViewMode("map");
+    requestAnimationFrame(() => {
+      mapPanel.current?.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+      mapPanel.current?.focus({ preventScroll: true });
+    });
   }
 
   return (
@@ -181,7 +193,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="route-panel mt-4 px-gutter">
+      <div ref={mapPanel} tabIndex={-1} aria-label="Trip map" className="route-panel mt-4 px-gutter outline-none focus-visible:outline-2 focus-visible:outline-blue">
         {viewMode === "map" ? (
           <RouteMap
             activeRouteId={selectedRouteId}
@@ -230,7 +242,9 @@ export default function HomePage() {
       </div>
 
       <div className="mt-4">
-        <PressureModule state={pressure} whenLabel={pressureWhen} />
+        <PressureModule state={pressure} whenLabel={pressureWhen} recommendedJourney={bestBus}
+          routeStatus={scenario ? "Demo: routes off" : !tripEnd ? "Pick a destination" : journeys.loading ? "Finding your bus…" : journeys.error ? "Routes unavailable" : "No bus option found"}
+          onShowJourney={showRecommendedJourney} />
       </div>
 
       {/* Live next-bus predictions cover three tracked routes near CMU. They are

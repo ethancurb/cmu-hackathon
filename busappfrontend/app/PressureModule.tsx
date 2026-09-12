@@ -3,16 +3,22 @@
 import { Divider } from "@/components/Divider";
 import { Disclosure } from "@/components/Disclosure";
 import { PressureDots } from "./PressureDots";
+import { PressureInsights } from "@/components/PressureInsights";
+import { BusIcon } from "@/components/icons/filled";
+import { explainSample } from "@/lib/pressure/explain";
+import { durationLabel, routesLabel, timingLabel } from "@/lib/journey/format";
+import type { Journey } from "@/lib/journey/types";
+import type { InsightCard } from "@/components/InsightCards";
 import type { PressureState } from "@/lib/pressure/use-pressure";
-import { clock, timeRange, dayLabel, CONFIDENCE_WORD, LEVEL_COLOR, LEVEL_WORD } from "@/lib/pressure/format";
-import type { EventImpact, UpcomingEvent } from "@/lib/pressure/types";
-
-const MAX_REASONS = 4;
+import { clock, timeRange, CONFIDENCE_WORD, LEVEL_COLOR, LEVEL_WORD } from "@/lib/pressure/format";
 
 type PressureModuleProps = {
   state: PressureState;
   /** Rendered next to the section label, e.g. "at 9:45 PM" or "leaving now". */
   whenLabel: string;
+  recommendedJourney: Journey | null;
+  routeStatus: string;
+  onShowJourney: (id: string) => void;
 };
 
 /**
@@ -21,7 +27,7 @@ type PressureModuleProps = {
  * in collapsed sections. Provenance lives on the Information page. Every value is produced by lib/pressure/engine.ts —
  * the advice time and text are never typed in here.
  */
-export function PressureModule({ state, whenLabel }: PressureModuleProps) {
+export function PressureModule({ state, whenLabel, recommendedJourney, routeStatus, onShowJourney }: PressureModuleProps) {
   const { data, error, loading } = state;
 
   if (!data) {
@@ -44,8 +50,22 @@ export function PressureModule({ state, whenLabel }: PressureModuleProps) {
   }
 
   const { current, surge, recommendation } = data;
-  const reasons = current.reasons.slice(0, MAX_REASONS);
-  const majorEvent = data.eventImpacts.find((i) => i.role === "MAJOR") ?? null;
+  const explanation = explainSample(data, 0);
+  const routeCard: InsightCard = recommendedJourney ? {
+    id: `journey-${recommendedJourney.id}`,
+    label: "Recommended",
+    title: routesLabel(recommendedJourney),
+    summary: `${durationLabel(recommendedJourney.durationSeconds)} · arrive ~${clock(recommendedJourney.endTime)}`,
+    meta: `Quickest · ${timingLabel(recommendedJourney)}`,
+    icon: <BusIcon className="h-4 w-4" />,
+    recommended: true,
+    actionLabel: "Show on map ↗",
+    action: () => onShowJourney(recommendedJourney.id),
+  } : {
+    id: "journey-unavailable", label: "Your route", title: routeStatus,
+    icon: <BusIcon className="h-4 w-4" />,
+    detail: "Choose a destination and departure time above to find bus options. Recommendations use available itineraries for that search.",
+  };
 
   return (
     <section className="px-gutter" aria-live="polite">
@@ -88,61 +108,11 @@ export function PressureModule({ state, whenLabel }: PressureModuleProps) {
 
       {/* Advice + WHY, collapsed by default. The summary is the model's own label. */}
       <Disclosure label="Advice" summary={recommendation.label}>
-        <p className="text-body text-blue">{recommendation.detail}</p>
-        <p className="mt-2 text-label text-blue">Why</p>
-        <ul className="mt-1 flex flex-col gap-[3px]">
-          {reasons.map((reason) => (
-            <li key={`${reason.type}-${reason.label}`} className="flex flex-col">
-              <span className="flex items-baseline justify-between gap-3">
-                <span className="min-w-0 text-body text-blue">{reason.label}</span>
-                <span className="shrink-0 text-body font-bold text-blue">+{reason.contribution}</span>
-              </span>
-              {reason.detail ? <span className="text-footnote text-blue opacity-footnote">{reason.detail}</span> : null}
-            </li>
-          ))}
-        </ul>
-        {majorEvent ? <EventImpactRow impact={majorEvent} /> : null}
-        {!majorEvent && data.upcoming[0] ? <UpcomingRow upcoming={data.upcoming[0]} /> : null}
+        <p className="mb-2 text-body text-blue">{recommendation.label}. {recommendedJourney ? "Quickest bus for your selected time:" : "Your trip insights:"}</p>
+        <PressureInsights items={explanation.items} label="Advice insights" firstCard={routeCard} upcoming={data.upcoming} gaps={explanation.gaps} />
       </Disclosure>
       <Divider />
 
     </section>
-  );
-}
-
-function EventImpactRow({ impact }: { impact: EventImpact }) {
-  const { event } = impact;
-  return (
-    <div className="mt-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="text-label text-blue">Event impact</span>
-        <span className="text-footnote text-blue opacity-footnote">Major contributor · +{impact.contribution}</span>
-      </div>
-      <p className="mt-1 text-row-title font-bold text-blue">{event.name}</p>
-      <p className="text-body text-blue">
-        {event.venue} · {impact.distanceKm} km from your trip{event.evidence === "RIDER" ? " · rider-reported, unverified" : ""}
-      </p>
-      <p className="text-body text-blue opacity-footnote">
-        {dayLabel(event.startTime)} {clock(event.startTime)} · {event.endEstimated ? "est. end" : "ends"} {clock(event.endTime)} · surge{" "}
-        {timeRange(impact.window.start, impact.window.end)} · {event.source}
-      </p>
-    </div>
-  );
-}
-
-function UpcomingRow({ upcoming }: { upcoming: UpcomingEvent }) {
-  const { event } = upcoming;
-  return (
-    <div className="mt-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="text-label text-blue">Upcoming on this trip</span>
-        <span className="text-footnote text-blue opacity-footnote">{upcoming.distanceKm} km away</span>
-      </div>
-      <p className="mt-1 text-row-title font-bold text-blue">{event.name}</p>
-      <p className="text-body text-blue opacity-footnote">
-        {event.venue} · {dayLabel(event.startTime)} {clock(event.startTime)} · arrivals peak ~{clock(upcoming.arrivalsPeakAt)} · exit wave ~
-        {clock(upcoming.exitPeakAt)}{event.endEstimated ? " (est.)" : ""}
-      </p>
-    </div>
   );
 }

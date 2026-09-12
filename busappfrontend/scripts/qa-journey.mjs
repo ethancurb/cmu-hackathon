@@ -111,7 +111,7 @@ try {
   if (!/true/.test(String(await section.getAttribute('aria-expanded')))) problems.push('selecting a bar did not open the evidence section');
   const evidence = await page.getByRole('region', { name: 'Evidence for the selected time' }).innerText();
   console.log(`plan: "${title.replace(/\n/g, ' ')}" → ${evidence.split('\n').slice(0, 3).join(' | ')}`);
-  if (!/model pattern|verified feed|rider report/.test(evidence)) problems.push('evidence items lack a basis label');
+  if (!/Model estimate|Verified feed|Rider report|Event/.test(evidence)) problems.push('evidence cards lack a snapshot label');
   const selectedBefore = await bars.nth(5).getAttribute('aria-label');
   await bars.nth(5).focus();
   await page.keyboard.press('ArrowRight');

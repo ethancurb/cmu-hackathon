@@ -45,6 +45,8 @@ flowchart LR
 
 ### Verification
 
+`components/InsightCards.tsx` supplies horizontal 168px square cards with scroll controls and one expandable detail panel; `PressureInsights.tsx` turns existing per-sample evidence into concise snapshots without contribution values. Home Advice puts `lib/journey/recommendation.ts`'s quickest returned BUS itinerary first (duration, transfers, walking); its action selects the shared journey, switches to map mode, and scrolls/focuses the map. Recommendations rank only the current provider search, not alternate pressure departure windows. `app/plan` resets card details when the selected sample changes. No API/model contract changes. `scripts/qa-insights.mjs` verifies this with explicit UI fixtures at 320/390/768/1280px, including missing routing.
+
 `npm test` (pressure, adapters, journey, chat, explain), typecheck, lint, build; foreground `npm start -- --port 3100` then `qa-screens`, `qa-flow`, `qa-fail`, `qa-menu`, `qa-journey` (chat → cards → map/ETA consistency → pan/zoom/fit → bar evidence → routing 503, chat 503, denied geolocation).
 
 ## Transit Pressure (issue #19)

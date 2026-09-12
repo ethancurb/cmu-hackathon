@@ -4,6 +4,17 @@ import assert from "node:assert/strict";
 import { parsePlan, parseItinerary, planUrl } from "../lib/journey/motis.ts";
 import { decodePolyline } from "../lib/journey/polyline.ts";
 import { acceptResponse, pickJourney, journeyUrl } from "../lib/journey/use-journeys.ts";
+import { recommendedBus } from "../lib/journey/recommendation.ts";
+
+test("recommended bus excludes walking-only options and ranks duration, transfers, walking without mutating provider order", () => {
+  const bus = (id, durationSeconds, transfers, walkSeconds) => ({ id, durationSeconds, transfers, walkSeconds, legs: [{ mode: "BUS" }] });
+  const choices = [bus("slow", 1800, 0, 0), bus("transfer", 1200, 1, 60), bus("walk-more", 1200, 0, 240), bus("best", 1200, 0, 120)];
+  const original = [...choices];
+  assert.equal(recommendedBus([{ id: "walk", durationSeconds: 300, legs: [{ mode: "WALK" }] }, ...choices]).id, "best");
+  assert.deepEqual(choices, original);
+  assert.equal(recommendedBus([]), null);
+  assert.equal(recommendedBus([{ legs: [{ mode: "RAIL" }] }]), null);
+});
 
 const T0 = "2026-09-12T20:34:00Z";
 const shift = (m) => new Date(Date.parse(T0) + m * 60_000).toISOString();

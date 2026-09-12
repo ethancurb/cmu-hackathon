@@ -9,13 +9,14 @@ import { Divider } from "@/components/Divider";
 import { ListRow } from "@/components/ListRow";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Disclosure } from "@/components/Disclosure";
+import { PressureInsights } from "@/components/PressureInsights";
 import { PressureTimeline } from "./PressureTimeline";
 import { useAppState } from "@/lib/app-context";
 import { useDeviceLocation } from "@/lib/geolocation";
 import { usePressure } from "@/lib/pressure/use-pressure";
 import { SCENARIO_DEFINITIONS } from "@/lib/pressure/demo";
 import { clock, timeRange, tomorrowAtLocalHour, LEVEL_WORD } from "@/lib/pressure/format";
-import { dayTitle, explainSample, type EvidenceItem } from "@/lib/pressure/explain";
+import { dayTitle, explainSample } from "@/lib/pressure/explain";
 import type { PressureResult } from "@/lib/pressure/types";
 
 const DAY_OPTIONS = ["Today", "Tomorrow"];
@@ -60,8 +61,6 @@ function optionsFor(result: PressureResult): Option[] {
   }
   return options;
 }
-
-const BASIS_LABEL: Record<EvidenceItem["basis"], string> = { VERIFIED: "verified feed", RIDER: "rider report · unverified", MODEL: "model pattern / forecast" };
 
 export default function PlanPage() {
   const router = useRouter();
@@ -156,30 +155,13 @@ export default function PlanPage() {
           <Divider />
           <Disclosure
             label={dayTitle(explanation.at)}
-            summary={`${explanation.score} / 100`}
+            summary={clock(explanation.at)}
             open={evidenceOpen}
             onOpenChange={setEvidenceOpen}
           >
             <section aria-label="Evidence for the selected time" className="flex flex-col gap-2">
-              <p className="text-body text-blue">{explanation.headline}</p>
-              <ul className="flex flex-col gap-[6px]">
-                {explanation.items.map((item, i) => (
-                  <li key={`${item.kind}-${i}`} className="flex flex-col">
-                    <span className="flex items-baseline justify-between gap-3">
-                      <span className="min-w-0 text-body font-bold text-blue">{item.event ? item.event.name : item.title}</span>
-                      <span className="shrink-0 text-body font-bold text-blue">+{item.contribution}</span>
-                    </span>
-                    {item.event ? <span className="text-body text-blue">{item.title.replace(`${item.event.name} · `, "")}</span> : null}
-                    {item.detail ? <span className="text-footnote text-blue opacity-footnote">{item.detail}</span> : null}
-                    <span className="text-footnote text-blue opacity-footnote">{BASIS_LABEL[item.basis]}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-body text-blue">{explanation.advice}</p>
-              {explanation.noEvent && explanation.gaps.length ? (
-                <p className="text-footnote text-blue opacity-footnote">No event is known for this time, which is not the same as nothing happening. Not covered: {explanation.gaps.join("; ")}.</p>
-              ) : null}
-              <p className="text-footnote text-blue opacity-footnote">Model index, not occupancy · Pittsburgh local time</p>
+              <p className="text-body text-blue">{explanation.level} pressure at {clock(explanation.at)}.</p>
+              <PressureInsights key={explanation.at} items={explanation.items} label="Timeline insights" gaps={explanation.gaps} />
             </section>
           </Disclosure>
           <Divider />
