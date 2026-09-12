@@ -161,7 +161,7 @@ export default function PlanPage() {
           >
             <section aria-label="Evidence for the selected time" className="flex flex-col gap-2">
               <p className="text-body text-blue">{explanation.level} pressure at {clock(explanation.at)}.</p>
-              <PressureInsights key={explanation.at} items={explanation.items} label="Timeline insights" gaps={explanation.gaps} />
+              <PressureInsights key={explanation.at} items={explanation.items} label="Timeline insights" upcoming={result.upcoming} gaps={explanation.gaps} />
             </section>
           </Disclosure>
           <Divider />

@@ -42,14 +42,19 @@ export function PressureInsights({ items, label, firstCard, upcoming = [], gaps 
   // Events lead the explanations; the recommended journey always stays first.
   const ordered = [...items.filter((item) => item.event), ...items.filter((item) => !item.event)];
   const cards = ordered.map(evidenceCard);
+  let hasEventCard = items.some((item) => item.kind === "EVENT");
   for (const entry of upcoming) {
     if (items.some((item) => item.event?.id === entry.event.id)) continue;
     cards.push({
       ...evidenceCard({ kind: "EVENT", title: entry.event.name, detail: `${entry.event.venue} · arrivals peak ~${clock(entry.arrivalsPeakAt)} · exit wave ~${clock(entry.exitPeakAt)}${entry.event.endEstimated ? " (estimated end)" : ""} · ${entry.event.source}`, contribution: 0, event: entry.event, basis: entry.event.evidence === "RIDER" ? "RIDER" : "VERIFIED" }, cards.length),
       label: entry.event.evidence === "RIDER" ? "Rider report" : "Coming up",
     });
+    hasEventCard = true;
   }
-  if (!items.some((item) => item.kind === "EVENT") && gaps.length) {
+  // Only claim "no known event" when nothing above already showed one — an
+  // upcoming card right next to a card saying "no known event" reads as a
+  // contradiction, not honest uncertainty.
+  if (!hasEventCard && gaps.length) {
     cards.push({ id: "coverage", label: "Coverage", title: "No known event", summary: "Some events may be missing", icon: <ClockIcon className="h-4 w-4" />, detail: <ul className="space-y-1">{gaps.map((gap) => <li key={gap}>{gap}</li>)}</ul> });
   }
   if (firstCard) cards.unshift(firstCard);
