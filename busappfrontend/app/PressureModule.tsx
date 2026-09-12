@@ -101,7 +101,7 @@ export function PressureModule({ state, whenLabel, recommendedJourney, routeStat
       <div className="flex items-baseline justify-between gap-3 py-[9px]">
         <span className="text-label text-blue">{surge ? "Expected surge" : "No surge expected"}</span>
         <span className="text-row-title font-bold text-blue" style={surge ? { color: LEVEL_COLOR.SURGE } : undefined}>
-          {surge ? `${timeRange(surge.start, surge.end)}${surge.continues ? "+" : ""}` : `next ${Math.round(((data.timeline.length - 1) * data.stepMinutes) / 60)} h`}
+          {surge ? `${timeRange(surge.start, surge.end)}${surge.continues ? "+" : ""}` : `clear through ${clock(data.timeline[data.timeline.length - 1]?.at)}`}
         </span>
       </div>
       <Divider />

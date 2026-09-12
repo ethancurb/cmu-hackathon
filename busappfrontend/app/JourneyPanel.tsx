@@ -5,7 +5,7 @@ import { Disclosure } from "@/components/Disclosure";
 import { BusIcon, WalkIcon } from "@/components/icons/filled";
 import { cn } from "@/lib/cn";
 import { clock } from "@/lib/pressure/format";
-import { durationLabel, legDetail, legTitle, minutes, routesLabel, timingLabel } from "@/lib/journey/format";
+import { durationLabel, legDetail, legTitle, minutes, routesLabel } from "@/lib/journey/format";
 import type { Journey } from "@/lib/journey/types";
 import type { JourneyState } from "@/lib/journey/use-journeys";
 
@@ -66,10 +66,7 @@ export function JourneyPanel({ state, journey, onSelect, hasDestination, whenLab
               </span>
             </div>
           </div>
-          <p className="mt-1 text-footnote text-blue opacity-footnote">
-            Arrival is an estimate · {timingLabel(journey)} · walking {minutes(journey.walkSeconds)} min, waiting {minutes(journey.waitSeconds)} min, riding {minutes(journey.rideSeconds)} min
-            {error ? ` · refresh failed, showing last result` : ""}
-          </p>
+          {error ? <p className="mt-1 text-footnote text-blue opacity-footnote">Refresh failed, showing last result.</p> : null}
 
           {journeys.length > 1 ? (
             <div role="radiogroup" aria-label="Journey options" className="journey-cards mt-3 flex gap-2 overflow-x-auto pb-1">
@@ -94,7 +91,7 @@ export function JourneyPanel({ state, journey, onSelect, hasDestination, whenLab
                       {clock(option.startTime)}–{clock(option.endTime)}
                     </span>
                     <span className="text-footnote text-blue opacity-footnote">
-                      {durationLabel(option.durationSeconds)} · {option.transfers ? `${option.transfers} xfer` : "direct"}
+                      {durationLabel(option.durationSeconds)} · {option.transfers ? `${option.transfers} transfer${option.transfers > 1 ? "s" : ""}` : "direct"}
                     </span>
                   </button>
                 );

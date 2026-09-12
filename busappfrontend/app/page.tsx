@@ -6,29 +6,25 @@ import { NavBar } from "@/components/NavBar";
 import { LocationField } from "@/components/LocationField";
 import { TimeRow } from "@/components/TimeRow";
 import { PrimaryButton } from "@/components/PrimaryButton";
-import { Disclosure } from "@/components/Disclosure";
 import { ClockIcon } from "@/components/icons/stroked";
 import { RouteMap } from "./RouteMap";
 import { RouteListView } from "./RouteListView";
-import { ArrivalCards } from "./ArrivalCards";
 import { PressureModule } from "./PressureModule";
 import { JourneyPanel } from "./JourneyPanel";
 import { ChatSheet } from "./ChatSheet";
 import { DemoBar } from "./DemoBar";
 import { useAppState, type DemoSelection } from "@/lib/app-context";
 import { useArrivalTimes } from "@/lib/arrivals";
-import { CMU_FALLBACK, useDeviceLocation } from "@/lib/geolocation";
+import { useDeviceLocation } from "@/lib/geolocation";
 import { useNow } from "@/lib/use-now";
 import { usePressure } from "@/lib/pressure/use-pressure";
 import { pickJourney, useJourneys } from "@/lib/journey/use-journeys";
 import { recommendedBus } from "@/lib/journey/recommendation";
-import { distanceKm } from "@/lib/pressure/geo";
 import { SCENARIOS, SCENARIO_DEFINITIONS, stageCount, type Scenario } from "@/lib/pressure/demo";
 import { clock, weekdayShort } from "@/lib/pressure/format";
 import type { AddressResult } from "@/lib/geocode";
 
 const DEFAULT_ORIGIN_LABEL = "Carnegie Mellon (default)";
-const NEARBY_CARDS_KM = 1.5;
 
 /** `/?demo=pirates&stage=2` puts the home screen into a deterministic scenario
  * (see lib/pressure/demo.ts). Read after mount so server and client first
@@ -132,7 +128,6 @@ export default function HomePage() {
   const majorEvent = pressure.data?.eventImpacts.find((i) => i.role === "MAJOR")?.event ?? null;
   const eventMarker = majorEvent ? { lat: majorEvent.lat, lng: majorEvent.lng, label: majorEvent.venue } : null;
   const demoRain = demo ? demo.stage >= (scenario?.event ? 2 : 1) : false;
-  const nearCmu = !demo && distanceKm(origin, CMU_FALLBACK) <= NEARBY_CARDS_KM;
 
   function handleSelectDestination(address: AddressResult) {
     setDestination({ label: address.label, lat: address.lat, lng: address.lng });
@@ -246,16 +241,6 @@ export default function HomePage() {
           routeStatus={scenario ? "Demo: routes off" : !tripEnd ? "Pick a destination" : journeys.loading ? "Finding your bus…" : journeys.error ? "Routes unavailable" : "No bus option found"}
           onShowJourney={showRecommendedJourney} />
       </div>
-
-      {/* Live next-bus predictions cover three tracked routes near CMU. They are
-          context for riders starting there, not a claim about the itinerary. */}
-      {nearCmu ? (
-        <div className="mt-2 px-gutter">
-          <Disclosure label="Next bus near CMU" summary="live PRT">
-            <ArrivalCards selectedRouteId={selectedRouteId} onSelectRoute={setSelectedRouteId} arrivals={arrivals} compact />
-          </Disclosure>
-        </div>
-      ) : null}
 
       <div className="mt-auto px-gutter pb-4 pt-4">
         <button
