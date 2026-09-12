@@ -34,6 +34,12 @@
   --bar: #c2c6ca; /* unselected chart bars */
   --on-ink: #ffffff; /* type on ink-deep */
 
+  /* Transit Pressure state colors: restrained, only on pressure glyphs/bars, never on chrome. */
+  --pressure-low: #5f8f4a; /* subtle green */
+  --pressure-moderate: #b8912a; /* muted amber */
+  --pressure-high: #c4652a; /* muted orange */
+  --pressure-surge: #b5322b; /* red */
+
   /* Type scale — empirically solved at true 390px scale (see scripts/solve-type-scale.mjs).
      The spec's original values were derived from cap-height on a 288px render and ran
      ~25% too large; these replace them by measuring real rendered string widths against
@@ -77,4 +83,53 @@ body {
   color: var(--blue);
   /* Temporary fallback behind the real family — see app/font-check.ts */
   font-family: var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+/* No document overscroll bounce; screens scroll within themselves as content grows. */
+html, body {
+  margin: 0;
+  overscroll-behavior: none;
+}
+
+/* Wide viewports: the reference design frames each screen as a phone on the
+   --page surround, so the app renders as one centered phone-width column. */
+@media (min-width: 768px) {
+  body {
+    background: var(--page);
+  }
+  .mobile-screen {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100dvh;
+    border-left: 1px solid var(--border-soft);
+    border-right: 1px solid var(--border-soft);
+  }
+}
+
+@media (max-width: 767px) {
+  .mobile-screen {
+    min-height: 100dvh;
+    width: 100%;
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .mobile-screen > * { flex-shrink: 0; min-width: 0; }
+  .mobile-screen .text-button-label { font-size: clamp(13px, 4.4vw, 18px); white-space: nowrap; }
+  .arrival-cards .text-emphasis-number { font-size: clamp(16px, 5vw, 21px); }
+  .arrival-cards .text-descriptor { font-size: clamp(13px, 4vw, 17px); }
+
+  @media (max-width: 359px) {
+    .mobile-screen { --gutter: 12px; --text-label: 14px; }
+    .arrival-cards { gap: 6px; }
+  }
+}
+
+/* The map panel is a fixed-height window; the rest of the screen flows beneath it. */
+.route-panel > div { height: 300px !important; }
+@media (max-height: 740px) and (max-width: 767px) {
+  .route-panel > div { height: 240px !important; }
 }

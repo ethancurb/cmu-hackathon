@@ -8,30 +8,35 @@ import { Badge } from "@/components/Badge";
 import { BusIcon, PinIcon } from "@/components/icons/filled";
 import type { RouteId } from "@/lib/mock-data";
 import { GTFS_ROUTE_ID } from "@/lib/prt-routes";
+import type { Journey, LatLng } from "@/lib/journey/types";
 
 export type MapCanvasHandle = {
   flyTo: (lat: number, lng: number) => void;
+  /** Fits the whole selected journey (walking legs included) or, without one, origin + destination. */
+  fitTrip: () => void;
+  zoomBy: (delta: number) => void;
 };
 
 export type Destination = { lat: number; lng: number } | null;
+export type EventMarker = { lat: number; lng: number; label: string } | null;
 
 type MapCanvasProps = {
   lat: number;
   lng: number;
   activeRouteId: RouteId;
   destination?: Destination;
+  /** The venue of the event driving Transit Pressure, when one is a major contributor. */
+  eventMarker?: EventMarker;
+  /** The selected provider-backed itinerary; drawn leg by leg when present. */
+  journey?: Journey | null;
   onNearestRoute?: (routeId: RouteId) => void;
   zoom?: number;
 };
 
 // Free, key-free raster basemap: Esri's "World Light Gray Base" (built from
 // OpenStreetMap and other public data), already a muted light-gray style
-// close to this app's palette. CARTO's equivalent free tiles were tried
-// first but now return a "API key required" watermark — that free tier has
-// since been gated. Vector tiles (OpenFreeMap) were tried before that for
-// full per-layer recoloring, but their worker-based tile pipeline didn't
-// come up reliably in this dev sandbox; raster has no such dependency and
-// is the more robust choice for a live demo either way.
+// close to this app's palette. See docs/ARCHITECTURE.md for the history of
+// this choice and the z16 placeholder-tile gotcha.
 const STYLE: StyleSpecification = {
   version: 8,
   sources: {
@@ -41,11 +46,8 @@ const STYLE: StyleSpecification = {
         "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
       ],
       tileSize: 256,
-      // This service has no real imagery past z16 here — it returns a
-      // placeholder tile with "Map data not yet available" baked into the
-      // pixels instead of an error. Declaring the true max makes MapLibre
-      // overzoom (scale up) the last real tile for closer views rather
-      // than requesting one that doesn't exist.
+      // No real imagery past z16 here: declaring the true max makes MapLibre
+      // overzoom the last real tile instead of requesting a placeholder.
       maxzoom: 16,
       attribution: "Esri, HERE, Garmin, © OpenStreetMap contributors, and the GIS user community",
     },
@@ -61,15 +63,10 @@ const STYLE: StyleSpecification = {
   ],
 };
 
-/** Real PRT route geometry (`public/route-shapes.geojson`), extracted from
- * PRT's published GTFS static feed (rideprt.org/developerresources/GTFS.zip
- * — key-free, license permits redistribution with attribution). One
- * LineString per route: the fullest shape actually used by a scheduled trip
- * on that route, per PRT's June 2026 feed. Loaded as plain GeoJSON and
- * projected to screen pixels by hand (see `project()` below) rather than
- * added as a MapLibre GeoJSON *source* — that path goes through the same
- * worker pipeline that silently failed to render vector tiles in this
- * sandbox, so hand-projecting avoids depending on Workers at all. */
+const MAX_ZOOM = 17;
+const FIT_PADDING = { top: 56, bottom: 64, left: 40, right: 40 };
+
+/** Real PRT route geometry (`public/route-shapes.geojson`), see docs/ARCHITECTURE.md. */
 type RouteFeature = {
   properties: { routeId: string; shortName: string; color: string };
   geometry: { coordinates: [number, number][] };
@@ -83,10 +80,8 @@ const INACTIVE_BADGE_CLASS: Record<RouteId, string> = {
   "54": "bg-bar text-blue",
 };
 
-/** Nearest of our three tracked routes to a point, by minimum distance to
- * any vertex of its real geometry. A flat equirectangular approximation is
- * fine here — points are all within a few km, and this only needs to rank
- * three routes against each other, not report a real distance. */
+/** Nearest of the three tracked routes to a point (used only for the nearby
+ * live-arrival cards; it is never a claim that the route reaches the destination). */
 function nearestRouteId(lat: number, lng: number, shapes: RouteFeature[]): RouteId | null {
   const cosLat = Math.cos((lat * Math.PI) / 180);
   let best: RouteId | null = null;
@@ -108,88 +103,140 @@ function nearestRouteId(lat: number, lng: number, shapes: RouteFeature[]): Route
 }
 
 type Point = { x: number; y: number };
+type ProjectedLeg = { path: string; mode: "WALK" | "TRANSIT"; board: Point | null; alight: Point | null; label: string | null };
 type Projected = {
   paths: Partial<Record<RouteId, string>>;
   anchors: Partial<Record<RouteId, Point>>;
   origin: Point | null;
   destination: Point | null;
+  event: Point | null;
+  legs: ProjectedLeg[];
 };
 
-/** Static, non-interactive MapLibre backdrop centered on a real coordinate,
- * with real route lines, a "you are here" marker, and (once a destination
- * is searched) a real destination pin — all projected onto it by hand.
- * Non-interactive on purpose: nothing here needs panning/zooming for a
- * small map card, and it keeps the projected overlay in sync with the
- * basemap without having to re-project on every drag frame. Recentering
- * happens only via `flyTo` (wired to the "Locate me" button), a
- * resolved-location update, or a newly picked destination (fits both
- * points in view). */
+const EMPTY: Projected = { paths: {}, anchors: {}, origin: null, destination: null, event: null, legs: [] };
+
+function journeyPoints(journey: Journey): LatLng[] {
+  return journey.legs.flatMap((leg) => leg.geometry);
+}
+
+/**
+ * Interactive MapLibre map (pan, pinch/scroll zoom with cooperative gestures so
+ * the page still scrolls, no rotation) with real route lines, the rider's
+ * origin, the destination pin, the event venue and the selected journey's legs
+ * projected onto it as an SVG overlay. The overlay is re-projected on every
+ * `move` frame so it tracks the basemap while dragging. The camera is only
+ * moved by explicit calls (locate, fit) and when the journey or destination
+ * changes — never on a data refresh — so exploring is not interrupted.
+ */
 export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function MapCanvas(
-  { lat, lng, activeRouteId, destination = null, onNearestRoute, zoom = 14 },
-  ref
+  { lat, lng, activeRouteId, destination = null, eventMarker = null, journey = null, onNearestRoute, zoom = 14 },
+  ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const shapesRef = useRef<RouteFeature[] | null>(null);
-  const [projected, setProjected] = useState<Projected>({ paths: {}, anchors: {}, origin: null, destination: null });
+  const frameRef = useRef<number | null>(null);
+  const [projected, setProjected] = useState<Projected>(EMPTY);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
-  // `recompute`/`onNearestRoute` are registered as MapLibre event handlers
-  // exactly once (see the mount effect below) and must not go stale across
-  // re-renders, so the latest props live in a ref rather than a closure —
-  // otherwise a `moveend` firing long after mount would re-project using
-  // whatever lat/lng/destination happened to be current at mount time.
-  const latestRef = useRef({ lat, lng, destination, onNearestRoute });
-  latestRef.current = { lat, lng, destination, onNearestRoute };
+  // MapLibre handlers are registered once; they read the latest props from a ref.
+  const latestRef = useRef({ lat, lng, destination, eventMarker, journey, onNearestRoute });
+  latestRef.current = { lat, lng, destination, eventMarker, journey, onNearestRoute };
+
+  const fitTo = (points: LatLng[]) => {
+    const map = mapRef.current;
+    if (!map || points.length === 0) return;
+    const bounds = new maplibregl.LngLatBounds([points[0].lng, points[0].lat], [points[0].lng, points[0].lat]);
+    for (const p of points) bounds.extend([p.lng, p.lat]);
+    map.fitBounds(bounds, { padding: FIT_PADDING, maxZoom: 16, duration: 700 });
+  };
+
+  const fitTrip = () => {
+    const { journey: cur, lat: curLat, lng: curLng, destination: curDest } = latestRef.current;
+    if (cur) return fitTo(journeyPoints(cur));
+    if (curDest) return fitTo([{ lat: curLat, lng: curLng }, curDest]);
+    mapRef.current?.flyTo({ center: [curLng, curLat], zoom, duration: 600 });
+  };
 
   useImperativeHandle(ref, () => ({
     flyTo: (nextLat, nextLng) => {
       mapRef.current?.flyTo({ center: [nextLng, nextLat], duration: 600 });
     },
+    fitTrip,
+    zoomBy: (delta) => {
+      const map = mapRef.current;
+      if (!map) return;
+      map.easeTo({ zoom: Math.max(9, Math.min(MAX_ZOOM, map.getZoom() + delta)), duration: 250 });
+    },
   }));
 
   const recompute = () => {
     const map = mapRef.current;
-    const shapes = shapesRef.current;
     const container = containerRef.current;
-    if (!map || !shapes || !container || !map.isStyleLoaded()) return;
-    const { lat: curLat, lng: curLng, destination: curDestination } = latestRef.current;
+    if (!map || !container || !map.isStyleLoaded()) return;
+    const { lat: curLat, lng: curLng, destination: curDestination, eventMarker: curEvent, journey: curJourney } = latestRef.current;
+    const shapes = shapesRef.current ?? [];
 
     const w = container.clientWidth;
     const h = container.clientHeight;
     const paths: Projected["paths"] = {};
     const anchors: Projected["anchors"] = {};
 
-    for (const feature of shapes) {
-      const appRouteId = APP_ROUTE_IDS.find((id) => GTFS_ROUTE_ID[id] === feature.properties.routeId);
-      if (!appRouteId) continue;
-
-      const screenPoints = feature.geometry.coordinates.map(([pLng, pLat]) => map.project([pLng, pLat]));
-      paths[appRouteId] = screenPoints.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-
-      const inView = screenPoints.filter((p) => p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h);
-      if (inView.length === 0) continue;
-      const cx = w / 2;
-      const cy = h / 2;
-      let best = inView[0];
-      let bestDist = Infinity;
-      for (const p of inView) {
-        const dist = (p.x - cx) ** 2 + (p.y - cy) ** 2;
-        if (dist < bestDist) {
-          bestDist = dist;
-          best = p;
+    // The three tracked route lines are context for the "next bus near CMU"
+    // cards; once a real itinerary is selected they step aside so the journey reads clearly.
+    if (!curJourney) {
+      for (const feature of shapes) {
+        const appRouteId = APP_ROUTE_IDS.find((id) => GTFS_ROUTE_ID[id] === feature.properties.routeId);
+        if (!appRouteId) continue;
+        const screenPoints = feature.geometry.coordinates.map(([pLng, pLat]) => map.project([pLng, pLat]));
+        paths[appRouteId] = screenPoints.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+        const inView = screenPoints.filter((p) => p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h);
+        if (inView.length === 0) continue;
+        let best = inView[0];
+        let bestDist = Infinity;
+        for (const p of inView) {
+          const dist = (p.x - w / 2) ** 2 + (p.y - h / 2) ** 2;
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = p;
+          }
         }
+        anchors[appRouteId] = { x: best.x, y: best.y };
       }
-      anchors[appRouteId] = { x: best.x, y: best.y };
     }
+
+    const legs: ProjectedLeg[] = (curJourney?.legs ?? []).map((leg) => {
+      const pts = leg.geometry.map((p) => map.project([p.lng, p.lat]));
+      const board = leg.mode !== "WALK" ? map.project([leg.from.lng, leg.from.lat]) : null;
+      const alight = leg.mode !== "WALK" ? map.project([leg.to.lng, leg.to.lat]) : null;
+      return {
+        path: pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" "),
+        mode: leg.mode === "WALK" ? "WALK" : "TRANSIT",
+        board: board ? { x: board.x, y: board.y } : null,
+        alight: alight ? { x: alight.x, y: alight.y } : null,
+        label: leg.mode === "WALK" ? null : leg.routeShortName ?? leg.mode,
+      };
+    });
 
     const originPoint = map.project([curLng, curLat]);
     const destinationPoint = curDestination ? map.project([curDestination.lng, curDestination.lat]) : null;
+    const eventPoint = curEvent ? map.project([curEvent.lng, curEvent.lat]) : null;
     setProjected({
       paths,
       anchors,
       origin: { x: originPoint.x, y: originPoint.y },
       destination: destinationPoint ? { x: destinationPoint.x, y: destinationPoint.y } : null,
+      event: eventPoint ? { x: eventPoint.x, y: eventPoint.y } : null,
+      legs,
+    });
+  };
+
+  // Coalesces `move` events (fired per animation frame while dragging) into one projection per frame.
+  const scheduleRecompute = () => {
+    if (frameRef.current !== null) return;
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = null;
+      recompute();
     });
   };
 
@@ -201,11 +248,19 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       style: STYLE,
       center: [lng, lat],
       zoom,
-      interactive: false,
+      maxZoom: MAX_ZOOM,
       attributionControl: false,
+      // Interactive, but the page keeps scrolling: plain wheel scrolls the page
+      // (Ctrl/⌘ + wheel zooms) and one finger scrolls on touch (two fingers pan/zoom).
+      cooperativeGestures: true,
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchPitch: false,
     });
+    map.touchZoomRotate.disableRotation();
     mapRef.current = map;
     map.on("load", recompute);
+    map.on("move", scheduleRecompute);
     map.on("moveend", recompute);
 
     fetch("/route-shapes.geojson")
@@ -233,52 +288,57 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     resizeObserver.observe(containerRef.current);
 
     return () => {
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
       resizeObserver.disconnect();
       map.remove();
       mapRef.current = null;
     };
-    // Initialize once; later position/destination updates go through
-    // setCenter/fitBounds below rather than tearing down and recreating the
-    // map instance. `recompute` reads fresh props via `latestRef`, not this
-    // closure, so it's safe for it to be stale here.
+    // Initialize once; later updates go through the effects below. `recompute`
+    // reads fresh props via `latestRef`, so it is safe for it to be stale here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // A resolved device location arriving after mount (geolocation is async)
-  // recenters the already-created map; `moveend` above re-projects onto it
-  // using latestRef, so it picks up the new lat/lng correctly.
+  // A resolved device location arriving after mount recenters the map only
+  // while nothing else (destination/journey) has claimed the viewport.
   useEffect(() => {
-    mapRef.current?.setCenter([lng, lat]);
+    if (!latestRef.current.destination && !latestRef.current.journey) mapRef.current?.setCenter([lng, lat]);
+    else recompute();
   }, [lat, lng]);
 
-  // A newly picked destination: fit both points in view (visibly "updates
-  // the route") and report which tracked route passes nearest to it. Keyed
-  // on the coordinate values, not object identity, so this doesn't refire
-  // on unrelated re-renders that happen to create a new destination object.
+  // A marker arriving or leaving after a pressure refresh needs a re-projection
+  // even though the camera has not moved.
+  useEffect(() => {
+    recompute();
+  }, [eventMarker?.lat, eventMarker?.lng]);
+
+  // A newly picked destination (without a journey yet): fit both points and
+  // report which tracked route passes nearest to it.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !destination) return;
-
-    const bounds = new maplibregl.LngLatBounds([lng, lat], [lng, lat]);
-    bounds.extend([destination.lng, destination.lat]);
-    map.fitBounds(bounds, { padding: 48, maxZoom: 16, duration: 800 });
-
+    if (!latestRef.current.journey) fitTo([{ lat, lng }, destination]);
     const shapes = shapesRef.current;
     if (shapes) {
       const nearest = nearestRouteId(destination.lat, destination.lng, shapes);
       if (nearest) onNearestRoute?.(nearest);
     }
-    // Shapes not loaded yet: the fetch handler above checks latestRef for a
-    // pending destination once they arrive.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [destination?.lat, destination?.lng]);
 
+  // A different journey: fit it once (walking legs included), then leave the camera alone.
+  const journeyKey = journey?.id ?? null;
+  useEffect(() => {
+    if (journey) fitTo(journeyPoints(journey));
+    recompute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [journeyKey]);
+
   return (
-    <div className="absolute inset-0" role="img" aria-label="Map centered on your current area">
+    <div className="absolute inset-0" aria-label="Interactive map of your trip">
       <div ref={containerRef} className="h-full w-full" />
 
       {size.w > 0 ? (
-        <svg className="absolute inset-0" width={size.w} height={size.h} viewBox={`0 0 ${size.w} ${size.h}`}>
+        <svg className="pointer-events-none absolute inset-0" width={size.w} height={size.h} viewBox={`0 0 ${size.w} ${size.h}`}>
           {APP_ROUTE_IDS.map((routeId) => {
             const d = projected.paths[routeId];
             if (!d) return null;
@@ -295,15 +355,56 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
               />
             );
           })}
+          {projected.legs.map((leg, i) => (
+            <path
+              key={i}
+              d={leg.path}
+              fill="none"
+              stroke={leg.mode === "WALK" ? "var(--blue)" : "var(--ink-deep)"}
+              strokeWidth={leg.mode === "WALK" ? 3 : 5}
+              strokeDasharray={leg.mode === "WALK" ? "2 6" : undefined}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+          {projected.legs.map((leg, i) =>
+            leg.board && leg.alight ? (
+              <g key={`stops-${i}`}>
+                <rect x={leg.board.x - 5} y={leg.board.y - 5} width={10} height={10} fill="var(--surface)" stroke="var(--ink-deep)" strokeWidth={2} />
+                <rect x={leg.alight.x - 5} y={leg.alight.y - 5} width={10} height={10} fill="var(--ink-deep)" stroke="var(--surface)" strokeWidth={2} />
+              </g>
+            ) : null,
+          )}
           {projected.origin ? (
             <circle cx={projected.origin.x} cy={projected.origin.y} r={7} fill="var(--surface)" stroke="var(--blue)" strokeWidth={3} />
           ) : null}
         </svg>
       ) : null}
 
+      {projected.legs.map((leg, i) =>
+        leg.board && leg.label ? (
+          <div key={`badge-${i}`} className="pointer-events-none absolute -translate-y-full" style={{ left: leg.board.x + 8, top: leg.board.y - 4 }}>
+            <Badge label={leg.label} />
+          </div>
+        ) : null,
+      )}
+
+      {projected.event && eventMarker ? (
+        <div
+          className="pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
+          style={{ left: projected.event.x, top: projected.event.y }}
+          aria-label={`Event venue: ${eventMarker.label}`}
+        >
+          <span className="block h-[11px] w-[11px] rotate-45 border border-surface" style={{ background: "var(--pressure-surge)" }} />
+          <span className="mt-[2px] whitespace-nowrap bg-surface px-1 text-footnote text-blue" style={{ lineHeight: 1.2 }}>
+            {eventMarker.label}
+          </span>
+        </div>
+      ) : null}
+
       {projected.destination ? (
         <PinIcon
-          className="absolute h-4 w-4 -translate-x-1/2 -translate-y-full"
+          className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-full"
           style={{ left: projected.destination.x, top: projected.destination.y }}
         />
       ) : null}
@@ -313,7 +414,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         if (!anchor) return null;
         const active = routeId === activeRouteId;
         return (
-          <div key={routeId} className="absolute flex items-center gap-1" style={{ left: anchor.x, top: anchor.y }}>
+          <div key={routeId} className="pointer-events-none absolute flex items-center gap-1" style={{ left: anchor.x, top: anchor.y }}>
             <BusIcon className="h-4 w-4" />
             {active ? (
               <Badge label={routeId} />
@@ -328,18 +429,14 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         );
       })}
 
-      {/* Required tile + route-data attribution, styled with the app's own
-       * footnote token rather than MapLibre's default control (which
-       * doesn't collapse to a compact form at this container width and
-       * crowds the utility icons). PRT's Developer License Agreement
-       * requires the exact sentence below for derivative works; it's kept
-       * in `title` since the visible label truncates at this width. */}
+      {/* Required tile + route-data attribution. PRT's Developer License
+       * Agreement requires the exact sentence in `title` for derivative works. */}
       <span
-        className="absolute text-footnote text-blue opacity-footnote"
+        className="pointer-events-none absolute text-footnote text-blue opacity-footnote"
         style={{ left: 0, right: 0, bottom: 34, textAlign: "center" }}
         title="Reproduced with permission granted by Port Authority of Allegheny County (PAAC). The information has been provided by means of a nonexclusive, limited, and revocable license granted by PAAC."
       >
-        Map data © Esri, OpenStreetMap contributors · Routes via PRT
+        Map data © Esri, OpenStreetMap contributors · Routes via PRT · Itinerary via Transitous
       </span>
     </div>
   );

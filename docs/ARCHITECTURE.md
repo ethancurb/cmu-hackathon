@@ -1,4 +1,91 @@
-# Architecture: a capacity addition to an existing journey
+# Architecture
+
+## Trip planning, chat and shared state (current, issue #20)
+
+```mermaid
+flowchart LR
+  UI[origin · destination · time · prefs] --> CTX[lib/app-context: one trip state]
+  CHAT[ChatSheet] --> API_C[/api/chat]
+  API_C --> G[lib/chat/guided.ts parser]
+  API_C --> M[lib/chat/model.ts Claude tools]
+  G & M --> X[lib/chat/execute.ts: planTrip]
+  X --> J[lib/journey/motis.ts → Transitous]
+  X --> P[lib/pressure/service.ts]
+  API_C -->|validated ChatAction[]| CTX
+  CTX --> H[useJourneys → /api/journey → motis.ts]
+  CTX --> PR[usePressure → /api/pressure]
+  H --> MAP[MapCanvas legs · JourneyPanel · RouteListView]
+  PR --> MOD[PressureModule · /plan timeline · explain.ts]
+```
+
+### Shared trip state (`lib/app-context.tsx`)
+
+`destination`, `manualOrigin` (null = device location or CMU fallback), `departureAt` + `arriveBy`, `prefs {maxWalkMinutes, maxTransfers}`, `selectedJourneyId`, `riderSignals`, `chatOpen`, plus the earlier `demo`, `viewMode`, `selectedRouteId`. Changing destination, time or prefs clears the journey selection; `pickJourney()` falls back to the first fresh option when a selected id disappears.
+
+### Journeys (`lib/journey`)
+
+- Provider: **Transitous** (public MOTIS instance over PRT GTFS; key-free; identifying `User-Agent` sent; verified 2026-09-12 with PRT stop ids and routes such as 61C and RED). `motis.ts` validates every leg (mode, places, times, polyline) and drops any itinerary with an unusable leg; walking-only `direct` results are offered once, never synthesized.
+- Contract (`types.ts`): `Journey { id, startTime, endTime, durationSeconds, transfers, walkSeconds, rideSeconds, waitSeconds, realTime, legs[] }`, `JourneyLeg { mode WALK|BUS|RAIL|TRAM|OTHER, from/to {name, stopId, lat, lng, at, scheduledAt}, routeShortName, headsign, agency, realTime, intermediateStops, geometry[] }`. `waitSeconds = duration − walk − ride`. `realTime` is true only when the provider flagged a transit leg realtime; the UI labels arrivals "estimate · realtime PRT | scheduled".
+- Endpoint: `GET /api/journey?flat&flng&tlat&tlng[&at=ISO][&arriveBy=1][&maxWalk=3..45][&maxTransfers=0..4]` → `JourneyResponse` (`ok | empty | error`), 400 on bad input, 503 on provider failure, in-process cache 45 s keyed to the minute. `useJourneys()` re-polls "leave now" every 60 s and applies **latest request wins** (`acceptResponse`, tested) so a slow older search never overwrites a newer selection.
+- Map: `MapCanvas` is interactive (pan, pinch/scroll zoom with `cooperativeGestures`, no rotation, zoom ≤ 17 over the z16 raster); the SVG overlay re-projects on every `move` frame. Camera moves only on locate, zoom, "Fit route", a new destination, or a new journey id — never on a data refresh. The three tracked route lines hide while a journey is drawn.
+
+### Chat planner (`lib/chat`, `app/ChatSheet.tsx`, `POST /api/chat`)
+
+- Request `{ messages[], trip: TripContext, pending }` → response `{ reply, actions: ChatAction[], journeyIds, options, pending, mode: "model"|"guided", fallback? }`. `GET /api/chat` reports the mode and the exact setup needed.
+- Actions are the only way chat changes the app: `set_origin`, `set_destination`, `set_time`, `set_prefs`, `select_journey` (must name a real journey id), `add_rider_signal`, `open_timeline`. `actions.ts` validates every one (Pittsburgh bounds, ≤ 48 h, walking 3–45 min, transfers 0–4, sanitized text).
+- `guided.ts` (no key): lexicon of ~45 Pittsburgh places with aliases, explicit ambiguities ("the museum", "the stadium" …) that ask instead of guessing, Photon fallback for addresses, Pittsburgh-local time phrases (`time.ts`), follow-ups (later/earlier, less/more walking, no transfers, after the event, pick option N), why/what's-happening explanations from `explain.ts`, rider reports. `model.ts` (key set): `claude-opus-5`, effort low, server-side refusal fallbacks enabled, tools `resolve_place`, `plan_trip`, `explain_time`, `after_event`, `report_cause`, `select_journey`, `ask_rider`; the loop runs the same executors and the same validation; on any API failure the guided parser answers and the response carries `fallback`.
+- Rider text and event descriptions are untrusted: sanitized, bounded, never executed as instructions.
+
+### Pressure additions (additive to the #19 contract)
+
+- `EventCategory` adds FESTIVAL, CONVENTION, CAMPUS, THEATER, OTHER; `EventSignal.evidence: VERIFIED | RIDER`; `RiderSignal` (validated by `rider-signals.ts`, capped at MEDIUM magnitude, end always estimated, labeled unverified).
+- `DemandReason.eventId?` and `.detail?` (forecast values, venue/phase/source, alert text, evidence weight) give each timeline sample its own evidence; `PressureResult.events[]` (all in-reach events considered) and `coverageGaps[]` (what this run could not see).
+- `POST /api/pressure` = GET query + `{ riderSignals }` body; `usePressure` switches to POST when rider signals exist. `explain.ts` (`explainSample`, `dayTitle`) is the single source for the "What's happening" section and chat explanations.
+- Ticketmaster now uses the venue's own coordinates and a 15-mile radius; sports feeds keep the venue table.
+
+### Verification
+
+`npm test` (pressure, adapters, journey, chat, explain), typecheck, lint, build; foreground `npm start -- --port 3100` then `qa-screens`, `qa-flow`, `qa-fail`, `qa-menu`, `qa-journey` (chat → cards → map/ETA consistency → pan/zoom/fit → bar evidence → routing 503, chat 503, denied geolocation).
+
+## Transit Pressure (issue #19)
+
+Canonical code: `busappfrontend/lib/pressure`. Providers stay server-side; React consumes `PressureResult` through `usePressure()`.
+
+```mermaid
+flowchart LR
+  UI[destination + time] --> API[/api/pressure]
+  API --> S[service.ts: SignalBundle]
+  E[events: MLB · NHL · ESPN · Ticketmaster?] --> S
+  W[Open-Meteo hourly] --> S
+  G[GTFS snapshot departures] --> S
+  R[PRT GTFS-RT protobuf: delays · alerts · vehicles] --> S
+  D[demo.ts scenarios] --> S
+  S --> M[engine.ts pure model]
+  M --> P[PressureResult: score · level · confidence · timeline · surge · bestWindow · reasons · eventImpacts · freshness]
+  P --> H[PressureModule · PressureTimeline · DemoBar · MapCanvas marker]
+```
+
+### Contract (`lib/pressure/types.ts`)
+
+- `SignalBundle { mode, generatedAt, location, destination?, events[], weather[], transit, departures[], freshness[] }` is the only engine input. Demo and live produce the same shape.
+- `PressureResult { current, timeline[], surge | null, bestWindow, recommendation {kind,label,detail,at}, eventImpacts[], freshness[], coverage, stepMinutes, mode, modelVersion }`. `score` is a 0–100 model index. `DemandReason {type: TIME|EVENT|WEATHER|TRANSIT|SERVICE, label, contribution}` explains every point.
+- `DataFreshness.status ∈ LIVE | STALE | FALLBACK | UNAVAILABLE | DEMO` describes data, not the model. Confidence (`HIGH|MEDIUM|LOW`) is derived from it plus horizon.
+
+### Endpoint
+
+`GET /api/pressure` — LIVE: `lat,lng` (Pittsburgh bounds; omitted = CMU), optional `dlat,dlng` (corridor end), `at` (ISO with zone, −5 min … +48 h), `horizon` (15–480 min). DEMO: `mode=DEMO&scenario=pirates|concert|cmu&stage=n[&at]`. Errors `{error}` with 400; 503 when the live model itself fails. `Cache-Control: no-store`; provider reads are cached/coalesced in-process (`providers/http.ts`).
+
+### Model
+
+Weights and thresholds live only in `lib/pressure/config.ts`; the formula and assumptions are documented in the [overnight report](overnight-report.md). Tests: `scripts/pressure.test.mjs` (relationships the model must satisfy) and `scripts/adapters.test.mjs` (parsers reject malformed input, null weather is missing not zero, GTFS calendar/exception logic).
+
+### Rules
+
+Never display the index as occupancy. Never infer counts from categories. Event end times are estimates and say so. A missing provider lowers confidence and omits its term; it never invents an observation. Keep this section current when the contract changes; the capacity contract below remains the reference for any future occupancy feature.
+
+---
+
+## Earlier: a capacity addition to an existing journey (deferred)
 
 Read [PROJECT](PROJECT.md) first. Recommended baseline: one Next.js/TypeScript mobile web frontend and API. Reuse Google for routing and PRT for vehicle data. Add shared Postgres only when persistence is needed for reports or forecasting history. This is a proposed interface; no runtime or integration exists yet.
 

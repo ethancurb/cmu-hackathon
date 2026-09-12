@@ -17,6 +17,10 @@ const config: Config = {
         "border-soft": "var(--border-soft)",
         bar: "var(--bar)",
         "on-ink": "var(--on-ink)",
+        "pressure-low": "var(--pressure-low)",
+        "pressure-moderate": "var(--pressure-moderate)",
+        "pressure-high": "var(--pressure-high)",
+        "pressure-surge": "var(--pressure-surge)",
       },
       fontFamily: {
         /* Temporary fallback stack behind the real families — see app/font-check.ts.

@@ -10,7 +10,12 @@ Help four humans win a HackCMU track with a distinctive, working project. Strate
 
 ## Product boundary
 
-- **Current capacity on the specific bus comes first.** Reuse the existing Google routing/ETA workflow; build the capacity addition described in `PROJECT`.
+- **Approved overnight direction (#19): predictive Transit Pressure comes first.** Combine event timing/proximity, hourly weather, temporal patterns and verified service evidence into an explained model index and actionable departure windows. Preserve existing mapping/search; do not rebuild routing. This supersedes the earlier capacity-first milestone.
+- Work in `busappfrontend`: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, `npm start -- --port 3100`, then `node scripts/qa-screens.mjs` and `node scripts/qa-flow.mjs` for runtime QA. Use foreground/session servers only; host Job Object detachment failure is not an app defect. Stop a stale server on :3100 before restarting; rebuilding under a running server breaks it.
+- Canonical pressure types/engine/adapters live in `lib/pressure`; React consumes `/api/pressure` through a hook. Providers stay server-side; deterministic demo inputs run through the same pure engine. No LLM required.
+- Preserve warm canvas, serif display type, compact mono utilities, thin borders, restrained pressure colors and square controls. Mobile must remain usable with accessible scrolling as content grows.
+- Scores are heuristic 0–100 model indices, never occupancy percentages or measured passenger counts. No invented attendance, delays, service, event times or precision. Estimated event end times are labeled assumptions. Missing signals lower confidence.
+- Done means model/adapter tests, typecheck/lint/build, responsive runtime QA, three offline scenarios, freshness/failure handling, clear WHY + departure advice, and updated overnight handoff. See `docs/overnight-plan.md`.
 - Phone location can help match a rider to a bus. Participating phones are not a passenger census. A vehicle ID, rated capacity, current occupancy, and forecast occupancy are distinct facts.
 - Keep current observations separate from forecasts for arrival at the rider's stop. Never invent counts, infer a percentage from a category, or display missing data as available space.
 - Tie each task to a criterion, visible product outcome, or delivery reliability. Cut speculative features, services, dependencies, and generic refactors. Test uncertain data access before building around it.
