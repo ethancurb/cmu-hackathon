@@ -1,6 +1,6 @@
 # Architecture: a capacity addition to an existing journey
 
-Read [PROJECT](PROJECT.md) first. Recommended baseline: one Next.js/TypeScript mobile web frontend and API. Reuse Google for routing and PRT for vehicle data. Add shared Postgres only when persistence is needed for reports or forecasting history. This is a proposed interface; no runtime or integration exists yet.
+Read [PROJECT](PROJECT.md) first. Recommended baseline: one Next.js/TypeScript mobile web frontend and API. Reuse Google Maps JS for the map canvas. Persistence is MongoDB Atlas with a time-series `stopEvents` collection; the earlier Postgres option is superseded ([ADR-0001](adr/0001-mongodb-for-mock-timeseries.md)). Consumers read through a `CapacitySource` abstraction so live PRT ingestion can replace the mock source without a schema change. Domain vocabulary lives in [CONTEXT](../CONTEXT.md). This is a proposed interface; no runtime or integration exists yet.
 
 ```mermaid
 flowchart LR
@@ -109,7 +109,7 @@ Only enable `atStop.kind = "forecast"` after obtaining suitable observations/his
 
 Poll our capacity endpoint about every five seconds; never translate each browser poll into a provider call. Coalesce upstream reads across clients at an initial 20-second cadence and bound requests to five seconds. Two provider requests every 20 seconds already consume 8,640 of the default 10,000 daily requests; budget across all routes, stops, and callers. Batch up to 10 stop IDs per `getpredictions` request, optionally filtered by route, or up to 10 vehicle IDs; do not combine `stpid` with `vid`. `getvehicles` accepts up to 10 vehicle IDs or route IDs, not both. Request `tmres=s`; predictions also support `unixTime=true` for UTC epoch milliseconds. These are guide capabilities, to verify against PRT. [BusTime guide](../DeveloperAPIGuide3_0.pdf), printed pp. 2, 9, 25–28.
 
-Match cache/storage to the deployment model; process memory is not shared across serverless instances. Add shared Postgres when reports/history/shared cache require persistence, without queues or a separate orchestration service.
+Match cache/storage to the deployment model; process memory is not shared across serverless instances. Shared persistence is MongoDB Atlas per [ADR-0001](adr/0001-mongodb-for-mock-timeseries.md); no queues or separate orchestration service.
 
 Keep API keys server-side. Planned settings: verified `PRT_API_BASE_URL`, required `PRT_API_KEY`, `GOOGLE_MAPS_API_KEY` for the server routing adapter when used, and `DATA_MODE`. Database settings are needed only if persistence is selected. Runtime pins, install/dev/check/deploy commands, credentials, and hosting are not configured yet. Publish actual commands when the scaffold exists.
 
