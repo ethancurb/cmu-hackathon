@@ -6,6 +6,7 @@ import { PressureDots } from "./PressureDots";
 import type { PressureState } from "@/lib/pressure/use-pressure";
 import { clock, timeRange, dayLabel, CONFIDENCE_WORD, LEVEL_COLOR, LEVEL_WORD, sourcesSummary, confidenceNote } from "@/lib/pressure/format";
 import type { EventImpact, PressureResult, UpcomingEvent } from "@/lib/pressure/types";
+import { OccupancyLine } from "./OccupancyLine";
 
 const MAX_REASONS = 4;
 
@@ -85,6 +86,9 @@ export function PressureModule({ state, whenLabel }: PressureModuleProps) {
           {surge ? `${timeRange(surge.start, surge.end)}${surge.continues ? "+" : ""}` : `next ${Math.round(((data.timeline.length - 1) * data.stepMinutes) / 60)} h`}
         </span>
       </div>
+      <Divider />
+
+      <OccupancyLine occupancy={data.occupancy} />
       <Divider />
 
       {/* Advice + WHY, collapsed by default. The summary is the model's own label. */}

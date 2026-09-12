@@ -48,7 +48,7 @@ export function nearestSampleIndex(timeline: DemandPrediction[], at: string): nu
 
 function basisFor(type: ReasonType, event: EventSignal | null): EvidenceItem["basis"] {
   if (event) return event.evidence === "RIDER" ? "RIDER" : "VERIFIED";
-  if (type === "TRANSIT") return "VERIFIED";
+  if (type === "TRANSIT" || type === "OCCUPANCY") return "VERIFIED";
   return "MODEL";
 }
 

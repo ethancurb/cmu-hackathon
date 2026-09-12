@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "node --test scripts/pressure.test.mjs scripts/adapters.test.mjs scripts/journey.test.mjs scripts/chat.test.mjs scripts/explain.test.mjs scripts/vehicle-model.test.mjs scripts/crowding.test.mjs",
+    "test": "node --experimental-strip-types --test scripts/pressure.test.mjs scripts/adapters.test.mjs scripts/journey.test.mjs scripts/chat.test.mjs scripts/explain.test.mjs scripts/vehicle-model.test.mjs scripts/crowding.test.mjs",
     "typecheck": "tsc --noEmit",
     "dev": "next dev",
     "build": "next build",

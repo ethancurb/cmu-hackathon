@@ -4,7 +4,7 @@
 
 Enter a destination and a time. LoadLine combines Pittsburgh sports schedules (Pirates, Steelers, Penguins), hourly weather, time-of-day patterns, PRT scheduled service and PRT GTFS-Realtime delays/alerts into one explained **Transit Pressure** index (0–100), finds the upcoming **surge window**, tells you **why**, and recommends a **better departure** ("Leave before 9:20 PM", "Wait until 10:25 PM").
 
-Scores are a relative model index, never a passenger count or an occupancy percentage. Every prediction lists its reasons and its data sources; missing or stale sources lower confidence instead of being faked.
+Scores are a relative model index, never a passenger count or an occupancy percentage. Current 71B onboard load is a separate live observation (PRT category, or a count only when PRT publishes one) that feeds the model and is labeled **People on the bus**. Missing or stale sources lower confidence instead of being faked.
 
 Recommended track: **Traveling**. Read the [overnight report](docs/overnight-report.md) for what was built, how the model works and the 60-second demo script. Product decisions live in [PROJECT](docs/PROJECT.md); interfaces in [ARCHITECTURE](docs/ARCHITECTURE.md).
 

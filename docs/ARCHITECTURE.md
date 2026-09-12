@@ -67,6 +67,7 @@ flowchart LR
   G[GTFS snapshot departures] --> S
   R[PRT GTFS-RT protobuf: delays · alerts · vehicles] --> S
   D[demo.ts scenarios] --> S
+  O[PRT occupancy: TrueTime / BusTime 71B] --> S
   S --> M[engine.ts pure model]
   M --> P[PressureResult: score · level · confidence · timeline · surge · bestWindow · reasons · eventImpacts · freshness]
   P --> H[PressureModule · PressureTimeline · DemoBar · MapCanvas marker]
@@ -74,8 +75,8 @@ flowchart LR
 
 ### Contract (`lib/pressure/types.ts`)
 
-- `SignalBundle { mode, generatedAt, location, destination?, events[], weather[], transit, departures[], freshness[] }` is the only engine input. Demo and live produce the same shape.
-- `PressureResult { current, timeline[], surge | null, bestWindow, recommendation {kind,label,detail,at}, eventImpacts[], freshness[], coverage, stepMinutes, mode, modelVersion }`. `score` is a 0–100 model index. `DemandReason {type: TIME|EVENT|WEATHER|TRANSIT|SERVICE, label, contribution}` explains every point.
+- `SignalBundle { mode, generatedAt, location, destination?, events[], weather[], transit, occupancy, departures[], freshness[] }` is the only engine input. Demo and live produce the same shape.
+- `PressureResult { current, timeline[], surge | null, bestWindow, recommendation {kind,label,detail,at}, eventImpacts[], freshness[], occupancy, coverage, stepMinutes, mode, modelVersion }`. `score` is a 0–100 model index. `DemandReason {type: TIME|EVENT|WEATHER|TRANSIT|SERVICE|OCCUPANCY, label, contribution}` explains every point. `occupancy` is the current 71B observation the model used.
 - `DataFreshness.status ∈ LIVE | STALE | FALLBACK | UNAVAILABLE | DEMO` describes data, not the model. Confidence (`HIGH|MEDIUM|LOW`) is derived from it plus horizon.
 
 ### Endpoint
@@ -88,7 +89,7 @@ Weights and thresholds live only in `lib/pressure/config.ts`; the formula and as
 
 ### Rules
 
-Never display the index as occupancy. Never infer counts from categories. Event end times are estimates and say so. A missing provider lowers confidence and omits its term; it never invents an observation. Keep this section current when the contract changes; the capacity contract below remains the reference for any future occupancy feature.
+Never display the index as occupancy. Never infer counts from categories. Event end times are estimates and say so. A missing provider lowers confidence and omits its term; it never invents an observation. Current 71B passenger load is a separate `occupancy` observation: PRT categories contribute a documented heuristic term and are shown as **People on the bus**; an integer count is displayed only when PRT publishes one. Keep this section current when the contract changes.
 
 ---
 
@@ -131,7 +132,7 @@ Decision: usable counts plus compatible capacity allow a numeric visual; usable 
 
 ### Implemented narrow observation: 71B at stop 3141 (#23)
 
-`lib/crowding` implements a deliberately narrower current-observation path without reviving the superseded capacity-first product. `app/api/crowding/route.ts` reads 71B inbound predictions for Fifth Ave + College (stop 3141), coalescing all browser polls into at most one upstream request per 20 seconds. With a server-only `PRT_API_KEY`, it uses BusTime v3 `getpredictions`; otherwise the hackathon prototype parses the same categorical passenger label on PRT's public TrueTime ETA page. Production deployment should use the authenticated API subject to PRT's access terms rather than depend on the consumer HTML.
+`lib/crowding` implements a deliberately narrower current-observation path without reviving the superseded capacity-first product. `app/api/crowding/route.ts` and `lib/pressure/providers/occupancy.ts` share one 20-second coalesced read of 71B inbound predictions for Fifth Ave + College (stop 3141). With a server-only `PRT_API_KEY`, it uses BusTime v3 `getpredictions`; otherwise the hackathon prototype parses the same categorical passenger label on PRT's public TrueTime ETA page. The occupancy adapter maps that observation into `SignalBundle.occupancy` so the engine can raise the current sample when PRT reports somewhat crowded or crowded. Production deployment should use the authenticated API subject to PRT's access terms rather than depend on the consumer HTML.
 
 Canonical values are `not_crowded | somewhat_crowded | crowded | null`. Page labels and API codes normalize as `Not crowded`/`EMPTY`, `Somewhat crowded`/`HALF_EMPTY`, and `Crowded`/`FULL`; blank, `N/A`, malformed, or unrecognized values remain `null`. Every observation is keyed by route + direction + stop + vehicle. `fetchedAt` records our request time while `observedAt` remains `null`, because neither path establishes when the passenger load was measured. A currently listed vehicle with a blank field is shown as **Not reported**, never as empty or available.
 

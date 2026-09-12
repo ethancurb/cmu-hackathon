@@ -18,3 +18,8 @@ Risk/handoff: shared unattended collection still needs a durable store plus sche
 Preserved nearby-CMU scoping, route selection, journey, crowding, and Transit Pressure contracts; saved the project’s warm editorial/civic design context in `.impeccable.md`.
 Verified `npm test` 45/45, typecheck, lint and Turbopack build; `qa-screens` passed 320/390/768/1280, `qa-flow` passed, and `qa-vehicle` loaded/revealed/bent the model, switched Map/Vehicle, confirmed no List control and three tiles at 320/390 with zero overflow or console errors.
 Physical-device touch behavior remains untested; otherwise no known layout regression.
+
+2026-09-12T19:43:20Z → occupancy wiring (GitHub Issues API denied; scoped on this branch) → shared 71B TrueTime/BusTime cache now feeds `SignalBundle.occupancy` and a named OCCUPANCY term; UI labels **People on the bus** with the PRT category or a published count, never an invented headcount.
+Demo stages carry EMPTY → HALF_EMPTY → FULL; missing load is UNAVAILABLE and omitted from the score.
+Verified `npm test` 48/48 and `npm run typecheck`; build/runtime QA still pending on this revision.
+Risk: PRT still publishes categories far more often than counts; `PRT_API_KEY` is unset here so live reads use the public TrueTime page.

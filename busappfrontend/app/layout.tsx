@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
 import { editorialNew, fraktionMono } from "./fonts";
 import { FontCheck } from "./font-check";
 import { AppProvider } from "@/lib/app-context";
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   description: "Predictive Transit Pressure for Pittsburgh: what transit will be like when you go, why, and when to leave.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${editorialNew.variable} ${fraktionMono.variable}`}>
       <body>

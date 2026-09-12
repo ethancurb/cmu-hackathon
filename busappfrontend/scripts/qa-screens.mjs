@@ -27,7 +27,10 @@ try {
       if (overflow.doc > 0 || overflow.body > 0) problems.push(`${vpName}/${name}: horizontal overflow ${JSON.stringify(overflow)}`);
       await page.screenshot({ path: `../qa/${vpName}-${name}.png`, fullPage: true });
       const text = await page.locator('body').innerText();
-      if (/free|% full|onboard|seats/i.test(text)) problems.push(`${vpName}/${name}: occupancy-like text present`);
+      if (/% full|seats remaining|available seats/i.test(text)) problems.push(`${vpName}/${name}: invented occupancy wording present`);
+      if ((name === "home-demo-3" || name === "home-live") && !/People on the bus/i.test(text)) {
+        problems.push(`${vpName}/${name}: missing people-on-the-bus occupancy label`);
+      }
       console.log(`${vpName}/${name}: ok, ${text.length} chars, overflow ${overflow.doc}/${overflow.body}`);
     }
     if (errors.length) problems.push(`${vpName}: console errors: ${errors.slice(0, 5).join(' | ')}`);

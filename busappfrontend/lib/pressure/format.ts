@@ -86,6 +86,7 @@ export function sourcesSummary(freshness: DataFreshness[]): string {
     ["events", events],
     ["weather", pick("Hourly weather")],
     ["PRT realtime", pick("PRT realtime")],
+    ["occupancy", pick("PRT occupancy")],
     ["schedule", pick("Scheduled service")],
   ] as const;
   return parts
@@ -101,6 +102,9 @@ export function confidenceNote(freshness: DataFreshness[]): string | null {
   const sports = freshness.filter((f) => ["MLB schedule", "NHL schedule", "ESPN schedule"].includes(f.source));
   if (realtime?.status === "UNAVAILABLE") return "Realtime vehicle data unavailable. Prediction based on schedule, events and weather.";
   if (realtime?.status === "STALE") return "Realtime data is stale and excluded from the score.";
+  const occupancy = freshness.find((f) => f.source === "PRT occupancy");
+  if (occupancy?.status === "UNAVAILABLE") return "Live 71B occupancy unavailable. No onboard load was assumed.";
+  if (occupancy?.status === "STALE") return "Live occupancy is stale and excluded from the score.";
   if (weather?.status === "UNAVAILABLE") return "Weather forecast unavailable; no weather effect applied.";
   if (sports.length && sports.every((f) => f.status === "UNAVAILABLE")) return "Event schedules unavailable; this is not evidence of no events.";
   return null;

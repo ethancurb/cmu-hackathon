@@ -2,6 +2,7 @@ import { fetchEvents } from "./providers/events.ts";
 import { fetchWeather } from "./providers/weather.ts";
 import { fetchSchedule } from "./providers/schedule.ts";
 import { fetchTransit } from "./providers/transit.ts";
+import { fetchOccupancy } from "./providers/occupancy.ts";
 import { buildPressure, riderSignalToEvent } from "./engine.ts";
 import type { DataFreshness, Point, PressureResult, RiderSignal } from "./types.ts";
 
@@ -12,10 +13,11 @@ export type LiveRequest = { location: Point; destination?: Point | null; at: str
  * freshness entry; they never masquerade as a feed. */
 export async function livePressure({ location, destination, at, horizonMinutes, riderSignals = [] }: LiveRequest): Promise<PressureResult> {
   const schedule = fetchSchedule(location, at);
-  const [events, weather, transit] = await Promise.all([
+  const [events, weather, transit, occupancy] = await Promise.all([
     fetchEvents(at),
     fetchWeather(location),
     fetchTransit(location, schedule.nearbyStopIds, schedule.routeIds),
+    fetchOccupancy(),
   ]);
   const riderFreshness: DataFreshness[] = riderSignals.length
     ? [{ source: "Rider reports", fetchedAt: new Date().toISOString(), status: "LIVE", detail: `${riderSignals.length} rider-reported cause(s); unverified, weighted below published schedules and labeled as such.` }]
@@ -29,8 +31,9 @@ export async function livePressure({ location, destination, at, horizonMinutes, 
       events: [...events.events, ...riderSignals.map(riderSignalToEvent)],
       weather: weather.weather,
       transit: transit.transit,
+      occupancy: occupancy.occupancy,
       departures: schedule.departures,
-      freshness: [...events.freshness, weather.freshness, schedule.freshness, ...transit.freshness, ...riderFreshness],
+      freshness: [...events.freshness, weather.freshness, schedule.freshness, ...transit.freshness, occupancy.freshness, ...riderFreshness],
     },
     at,
     horizonMinutes,

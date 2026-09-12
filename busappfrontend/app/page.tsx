@@ -201,7 +201,7 @@ export default function HomePage() {
             onSetViewMode={setViewMode}
           />
         ) : (
-          <VehicleModelView viewMode={viewMode} onSetViewMode={setViewMode} />
+          <VehicleModelView viewMode={viewMode} onSetViewMode={setViewMode} occupancy={pressure.data?.occupancy ?? null} />
         )}
       </div>
 

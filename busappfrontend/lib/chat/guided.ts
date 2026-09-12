@@ -78,13 +78,14 @@ export function extractRiderReport(text: string): { name: string; venueQuery: st
   return { name: name.replace(/^\w/, (c) => c.toUpperCase()), venueQuery, category };
 }
 
-function timeFromIntent(intent: TimeIntent, ctx: ChatRequest["trip"]): { at: string | null; arriveBy: boolean; note: string | null } {
+function timeFromIntent(intent: TimeIntent, ctx: ChatRequest["trip"], now: Date): { at: string | null; arriveBy: boolean; note: string | null } {
   if (!intent) return { at: ctx.departureAt, arriveBy: ctx.arriveBy, note: null };
   if (intent.kind === "now") return { at: null, arriveBy: false, note: null };
   if (intent.kind === "at") return { at: intent.at, arriveBy: intent.arriveBy, note: intent.assumed ? `(I read the time as ${intent.assumed}.)` : null };
   if (intent.kind === "shift") {
-    const base = ctx.journey ? Date.parse(ctx.journey.startTime) : ctx.departureAt ? Date.parse(ctx.departureAt) : Date.now();
-    const at = new Date(Math.max(base + intent.minutes * 60_000, Date.now() + 60_000)).toISOString();
+    const nowMs = now.getTime();
+    const base = ctx.journey ? Date.parse(ctx.journey.startTime) : ctx.departureAt ? Date.parse(ctx.departureAt) : nowMs;
+    const at = new Date(Math.max(base + intent.minutes * 60_000, nowMs + 60_000)).toISOString();
     return { at, arriveBy: false, note: `Shifted ${intent.minutes > 0 ? "later" : "earlier"} to ${clock(at)}.` };
   }
   return { at: ctx.departureAt, arriveBy: ctx.arriveBy, note: null };
@@ -205,7 +206,7 @@ export async function guidedTurn(req: ChatRequest, deps: GuidedDeps = defaultDep
     if (/fewer transfers|no transfers?|direct (bus|route|trip)|without transfer/.test(text)) return completeTrip({ maxTransfers: 0 }, req, deps, ["Direct services only (no transfers)."]);
     if (/any transfers|allow transfers|transfers (are )?ok/.test(text)) return completeTrip({ maxTransfers: JOURNEY_DEFAULTS.maxTransfers }, req, deps, ["Transfers allowed again."]);
     if (intent && (intent.kind === "shift" || intent.kind === "now") && !/\bto\b|\bfrom\b/.test(text)) {
-      const t = timeFromIntent(intent, ctx);
+      const t = timeFromIntent(intent, ctx, deps.now());
       return completeTrip({ at: t.at, arriveBy: t.arriveBy }, req, deps, t.note ? [t.note] : []);
     }
     const journeyPick = text.match(/\b(?:option|journey|take|choose|pick|select)\s*(?:the\s*)?(\d)\b|\b(first|second|third)\b/);

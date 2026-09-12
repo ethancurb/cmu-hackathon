@@ -1,6 +1,6 @@
 // Deterministic Pittsburgh scenarios. They inject structured signals through the
 // SAME engine as live data — nothing here hardcodes a score.
-import type { DataFreshness, EventSignal, SignalBundle, WeatherSignal } from "./types.ts";
+import type { DataFreshness, EventSignal, OccupancyCategory, OccupancyObservation, SignalBundle, WeatherSignal } from "./types.ts";
 
 export const SCENARIOS = ["pirates", "concert", "cmu"] as const;
 export type Scenario = (typeof SCENARIOS)[number];
@@ -133,14 +133,20 @@ export function demoBundle(scenario: Scenario = "pirates", stage?: number): Sign
   const rainy = s >= rainStage;
   const delayed = s >= delayStage;
 
-  const freshness: DataFreshness[] = ["Events", "Hourly weather", "PRT realtime", "Scheduled service"].map((source) => ({
+  const last = def.stages.length - 1;
+  const occupancyCategory: OccupancyCategory = s >= last ? "crowded" : s >= 1 ? "somewhat_crowded" : "not_crowded";
+  const occupancy = demoOccupancy(def.now, occupancyCategory);
+
+  const freshness: DataFreshness[] = ["Events", "Hourly weather", "PRT realtime", "Scheduled service", "PRT occupancy"].map((source) => ({
     source,
     fetchedAt: def.now,
     status: "DEMO",
     detail:
       source === "Scheduled service"
         ? "No scheduled departures assumed in this scenario"
-        : "Deterministic scenario input; not a live observation",
+        : source === "PRT occupancy"
+          ? `Authored 71B category ${occupancy.raw}; not a headcount`
+          : "Deterministic scenario input; not a live observation",
   }));
 
   return {
@@ -156,7 +162,29 @@ export function demoBundle(scenario: Scenario = "pirates", stage?: number): Sign
       vehicleCount: 4,
       observedAt: def.now,
     },
+    occupancy,
     departures: [],
     freshness,
+  };
+}
+
+function demoOccupancy(now: string, category: OccupancyCategory): OccupancyObservation {
+  const raw = category === "crowded" ? "FULL" : category === "somewhat_crowded" ? "HALF_EMPTY" : "EMPTY";
+  return {
+    route: "71B",
+    direction: "INBOUND",
+    stopId: "3141",
+    stopName: "Fifth Ave + College",
+    vehicleId: "DEMO-3419",
+    destination: "DOWNTOWN",
+    etaLabel: "6 min",
+    category,
+    raw,
+    passengerCount: null,
+    fetchedAt: now,
+    observedAt: null,
+    source: "Authored demo scenario",
+    status: "DEMO",
+    message: "Deterministic categorical passenger-load observation; not a live PRT count.",
   };
 }

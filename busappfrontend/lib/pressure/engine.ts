@@ -25,6 +25,7 @@ import {
   LEVELS,
   MODEL_VERSION,
   RECOMMENDATION,
+  OCCUPANCY,
   SERVICE,
   TEMPORAL,
   TIMELINE,
@@ -249,7 +250,33 @@ export function transitReason(bundle: SignalBundle, at: string): DemandReason | 
 }
 
 // ---------------------------------------------------------------------------
-// Term 5: scheduled service frequency (sparse service raises pressure)
+// Term 5: current onboard load (PRT category or published count)
+
+export function occupancyReason(bundle: SignalBundle, at: string): DemandReason | null {
+  const observation = bundle.occupancy;
+  const status = bundle.freshness.find((f) => f.source === "PRT occupancy")?.status ?? observation.status;
+  if (status !== "LIVE" && status !== "DEMO") return null;
+  const evidenceAt = observation.observedAt ?? observation.fetchedAt;
+  const weight = transitEvidenceWeight(evidenceAt, at);
+  if (weight <= 0) return null;
+
+  const categoryPoints = observation.category ? OCCUPANCY.points[observation.category] : 0;
+  const contribution = Math.round(clamp(categoryPoints * weight, 0, OCCUPANCY.max));
+  if (!contribution) return null;
+
+  const raw = observation.raw ?? observation.category ?? "reported";
+  const vehicle = observation.vehicleId ? `vehicle ${observation.vehicleId}` : "listed vehicle";
+  const countNote = observation.passengerCount !== null ? ` PRT also published ${observation.passengerCount} people.` : " PRT does not publish a headcount for this field.";
+  return {
+    type: "OCCUPANCY",
+    label: `71B live occupancy · ${observation.category === "crowded" ? "crowded" : "somewhat crowded"}`,
+    contribution,
+    detail: `${observation.source ?? "PRT"} reports ${raw} on ${vehicle} toward ${observation.stopName ?? "the stop"}${observation.etaLabel ? ` · ${observation.etaLabel}` : ""}.${countNote} Current observation only; fades with age.`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Term 6: scheduled service frequency (sparse service raises pressure)
 
 export function serviceReason(bundle: SignalBundle, at: string): DemandReason | null {
   const t = Date.parse(at);
@@ -284,7 +311,8 @@ export function confidenceFor(bundle: SignalBundle, at: string): Confidence {
   };
   const sportsFeeds = ["MLB schedule", "NHL schedule", "ESPN schedule"].filter(usable).length;
   const eventsUsable = bundle.mode === "DEMO" ? usable("Events") : sportsFeeds >= 2;
-  const points = [eventsUsable, usable("Hourly weather"), usable("PRT realtime"), usable("Scheduled service")].filter(Boolean).length;
+  const occupancyUsable = usable("PRT occupancy") && (!!bundle.occupancy.category || bundle.occupancy.passengerCount !== null);
+  const points = [eventsUsable, usable("Hourly weather"), usable("PRT realtime"), usable("Scheduled service"), occupancyUsable].filter(Boolean).length;
   const stale = bundle.freshness.some((f) => f.status === "STALE");
   const horizonHours = (Date.parse(at) - Date.parse(bundle.generatedAt)) / HOUR;
   const weatherCovered = !!bundle.weather.length;
@@ -299,7 +327,7 @@ export function confidenceFor(bundle: SignalBundle, at: string): Confidence {
 
 export function predictPressure(bundle: SignalBundle, at: string): DemandPrediction {
   const reasons: DemandReason[] = [temporalBaseline(at), ...eventReasons(bundle, at)];
-  for (const reason of [weatherReason(bundle, at), transitReason(bundle, at), serviceReason(bundle, at)]) {
+  for (const reason of [weatherReason(bundle, at), transitReason(bundle, at), occupancyReason(bundle, at), serviceReason(bundle, at)]) {
     if (reason) reasons.push(reason);
   }
   const score = Math.round(clamp(reasons.reduce((sum, r) => sum + r.contribution, 0)));
@@ -509,6 +537,11 @@ export function coverageGaps(bundle: SignalBundle): string[] {
     if (status("Ticketmaster") !== "LIVE" && status("Ticketmaster") !== "STALE") gaps.push("Concerts, theater, festivals and ticketed events (needs TICKETMASTER_API_KEY)");
     gaps.push("Campus events, conventions, parades and road closures (no feed connected)");
     if (status("PRT realtime") !== "LIVE") gaps.push("Live service disruptions (PRT realtime feed not usable this run)");
+    if (status("PRT occupancy") !== "LIVE" && status("PRT occupancy") !== "STALE") {
+      gaps.push("Current 71B passenger load (PRT TrueTime/BusTime not usable this run)");
+    } else if (!bundle.occupancy.category && bundle.occupancy.passengerCount === null) {
+      gaps.push("PRT listed 71B but published no passenger-load category or count");
+    }
     if (!bundle.weather.length) gaps.push("Weather forecast");
   } else {
     gaps.push("Deterministic scenario: only the authored signals exist");
@@ -544,5 +577,6 @@ export function buildPressure(bundle: SignalBundle, start: string, horizonMinute
     events: bundle.events.filter((e) => corridorDistanceKm(e, bundle.location, bundle.destination) < EVENT.reachKm),
     coverage: COVERAGE_NOTE,
     coverageGaps: coverageGaps(bundle),
+    occupancy: bundle.occupancy,
   };
 }

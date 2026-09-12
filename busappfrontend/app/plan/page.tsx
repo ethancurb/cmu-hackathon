@@ -17,6 +17,7 @@ import { SCENARIO_DEFINITIONS } from "@/lib/pressure/demo";
 import { clock, timeRange, tomorrowAtLocalHour, LEVEL_WORD } from "@/lib/pressure/format";
 import { dayTitle, explainSample, type EvidenceItem } from "@/lib/pressure/explain";
 import type { PressureResult } from "@/lib/pressure/types";
+import { OccupancyLine } from "../OccupancyLine";
 
 const DAY_OPTIONS = ["Today", "Tomorrow"];
 const HORIZON_OPTIONS = ["4 hours", "8 hours"];
@@ -150,6 +151,12 @@ export default function PlanPage() {
         )}
       </div>
 
+      {result ? (
+        <div className="mt-[11px] px-gutter">
+          <OccupancyLine occupancy={result.occupancy} />
+        </div>
+      ) : null}
+
       {/* What's happening at the selected bar: only that sample's evidence. */}
       {result && explanation ? (
         <div className="mt-[11px] px-gutter">
@@ -211,7 +218,7 @@ export default function PlanPage() {
           <Divider />
         </div>
         <p className="px-gutter py-[11px] text-footnote text-blue opacity-footnote">
-          {result ? `${result.recommendation.detail} ` : ""}Model index from events, weather, time patterns and PRT service; not occupancy.
+          {result ? `${result.recommendation.detail} ` : ""}Model index from events, weather, time patterns, PRT service and current 71B occupancy. The score is not a headcount.
         </p>
       </div>
 
