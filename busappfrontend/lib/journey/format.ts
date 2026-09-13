@@ -63,12 +63,19 @@ export function leaveByTime(journey: Journey): string | null {
   return new Date(boardAt - walkToStopSeconds * 1000 - LEAVE_BUFFER_MINUTES * 60_000).toISOString();
 }
 
-/** "in 6 min" / "due"; null while `now` hasn't mounted yet (caller falls back to a clock time). */
+/** "in 6 min" / "leave now"; null while `now` hasn't mounted yet (caller falls back to a clock time). */
 export function minutesUntilLabel(at: string, now: number | null): string | null {
   if (now === null) return null;
   const diffMin = Math.floor((Date.parse(at) - now) / 60_000);
-  if (diffMin <= 0) return "due";
+  if (diffMin <= 0) return "leave now";
   return `in ${diffMin} min`;
+}
+
+/** Whether the rider must leave within `LEAVE_BUFFER_MINUTES` to make this departure. */
+export function isLeaveUrgent(at: string, now: number | null): boolean {
+  if (now === null) return false;
+  const diffMin = Math.floor((Date.parse(at) - now) / 60_000);
+  return diffMin <= LEAVE_BUFFER_MINUTES;
 }
 
 export function journeySummary(journey: Journey): string {
