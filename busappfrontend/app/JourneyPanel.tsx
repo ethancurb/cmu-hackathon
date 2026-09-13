@@ -7,7 +7,7 @@ import { ChevronDownIcon } from "@/components/icons/stroked";
 import { JourneyItinerary } from "./JourneyItinerary";
 import { cn } from "@/lib/cn";
 import { clock } from "@/lib/pressure/format";
-import { durationLabel, leaveByTime, minutes, minutesUntilLabel, routesLabel, timingLabel } from "@/lib/journey/format";
+import { durationLabel, isLeaveUrgent, leaveByTime, minutes, minutesUntilLabel, routesLabel, timingLabel } from "@/lib/journey/format";
 import type { Journey } from "@/lib/journey/types";
 import type { JourneyState } from "@/lib/journey/use-journeys";
 
@@ -93,6 +93,7 @@ export function JourneyPanel({ state, journey, onSelect, hasDestination, whenLab
                 const walkOnly = option.legs.every((leg) => leg.mode === "WALK");
                 const leaveAt = leaveBy(option);
                 const countdown = minutesUntilLabel(leaveAt, now) ?? clock(leaveAt);
+                const urgent = isLeaveUrgent(leaveAt, now);
                 return (
                   <button
                     key={option.id}
@@ -107,11 +108,11 @@ export function JourneyPanel({ state, journey, onSelect, hasDestination, whenLab
                     )}
                   >
                     {selected ? <span className="absolute right-[6px] top-[6px] h-[9px] w-[9px] bg-lime" aria-hidden /> : null}
-                    <span className="flex max-w-full items-center gap-1">
-                      {walkOnly ? <WalkIcon className="h-4 w-4 shrink-0" /> : <BusIcon className="h-4 w-4 shrink-0" />}
-                      <span className="truncate text-row-title font-bold text-blue">{routesLabel(option)}</span>
+                    <span className="flex max-w-full items-start gap-1">
+                      {walkOnly ? <WalkIcon className="mt-[2px] h-4 w-4 shrink-0" /> : <BusIcon className="mt-[2px] h-4 w-4 shrink-0" />}
+                      <span className="min-w-0 break-words text-row-title font-bold text-blue">{routesLabel(option)}</span>
                     </span>
-                    <span className="flex items-center gap-1 text-body font-bold text-blue">
+                    <span className={cn("flex items-center gap-1 text-body font-bold", urgent ? "text-pressure-surge" : "text-blue")}>
                       {countdown}
                       <ChevronDownIcon className={cn("h-[7px] w-[10px] shrink-0 transition-transform motion-reduce:transition-none", expanded && "rotate-180")} />
                     </span>
